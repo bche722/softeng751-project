@@ -1,3 +1,7 @@
+# Make sure that the .project and .classpath files are under version control.
+# These files must be stored in the repository so that other users checking out
+# the projects for the first time will get the correct type of project and will get the correct Java build path.
+
 # Compiled class file
 *.class
 
@@ -20,3 +24,25 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Build output directies #
+##########################
+/target
+*/target
+/build
+*/build
+
+# IntelliJ specific files/directories #
+# idea just in case (preferably do not use intellij because the lack of support for ParaTask)
+#######################################
+out
+.idea
+*.ipr
+*.iws
+*.iml
+atlassian-ide-plugin.xml
+
+# Eclipse specific files/directories #
+######################################
+.settings
+.metadata
