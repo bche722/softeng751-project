@@ -33,5 +33,15 @@
             <artifactId>annotation-based-PT</artifactId>
             <version>1.5.2</version>
         </dependency>
+        <dependency>
+            <groupId>PARC-UoA</groupId>
+            <artifactId>annotation-based-PT-docs</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>PARC-UoA</groupId>
+            <artifactId>annotation-based-PT-src</artifactId>
+            <version>1.5.2</version>
+        </dependency>
     </dependencies>
 </project>
