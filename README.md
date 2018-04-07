@@ -24,7 +24,7 @@ This project is relying on the support from @PT (https://github.com/ParallelAndR
 ```
 mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=annotation-based-PT -Dversion=1.5.2 -Durl=file:./libs/ -DrepositoryId=annotation-based-PT-1.5.2 -DupdateReleaseInfo=true -Dfile=libs/@PT-1.5.2.jar
 mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-docs -Dversion=1.5.2 -Durl=file:./libs/ -DrepositoryId=annotation-based-PT-1.5.2 -DupdateReleaseInfo=true -Dfile=libs/@PT-1.5.2-docs.jar
-mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-docs -Dversion=1.5.2 -Durl=file:./libs/ -DrepositoryId=annotation-based-PT-1.5.2 -DupdateReleaseInfo=true -Dfile=libs/@PT-1.5.2-src.jar
+mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-src -Dversion=1.5.2 -Durl=file:./libs/ -DrepositoryId=annotation-based-PT-1.5.2 -DupdateReleaseInfo=true -Dfile=libs/@PT-1.5.2-src.jar
 ```
 - add the dependency in the pom.xml:
 ```xml
@@ -37,4 +37,12 @@ mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-docs 
 - install the @PT jar:
 ```
 mvn install:install-file -Dfile=libs/@PT-1.5.2.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT -Dversion=1.5.2 -Dpackaging=jar
+```
+- install the @PT docs (optional):
+```
+mvn install:install-file -Dfile=libs/@PT-1.5.2-docs.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-docs -Dversion=1.5.2 -Dpackaging=jar
+```
+- install the @PT src:
+```
+mvn install:install-file -Dfile=libs/@PT-1.5.2-src.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-src -Dversion=1.5.2 -Dpackaging=jar
 ```
