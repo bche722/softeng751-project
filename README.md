@@ -42,7 +42,7 @@ mvn install:install-file -Dfile=libs/@PT-1.5.2.jar -DgroupId=PARC-UoA -Dartifact
 ```
 mvn install:install-file -Dfile=libs/@PT-1.5.2-docs.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-docs -Dversion=1.5.2 -Dpackaging=jar
 ```
-- install the @PT src:
+- install the @PT src (optional):
 ```
 mvn install:install-file -Dfile=libs/@PT-1.5.2-src.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-src -Dversion=1.5.2 -Dpackaging=jar
 ```
