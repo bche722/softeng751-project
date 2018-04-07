@@ -46,3 +46,56 @@ mvn install:install-file -Dfile=libs/@PT-1.5.2-docs.jar -DgroupId=PARC-UoA -Dart
 ```
 mvn install:install-file -Dfile=libs/@PT-1.5.2-src.jar -DgroupId=PARC-UoA -DartifactId=annotation-based-PT-src -Dversion=1.5.2 -Dpackaging=jar
 ```
+
+## missing dependencies to PARCutils
+same as adding dependencies for @PT
+make sure the following entries present in the pom.xml:
+```
+<repositories>
+    ...
+    <repository>
+        <id>PARCutils-1.2.4</id>
+        <url>file:///${project.basedir}/libs</url>
+    </repository>
+    ...
+</repositories>
+        
+        ...
+        
+<dependencies>
+    ...
+    <dependency>
+            <groupId>PARC-UoA</groupId>
+            <artifactId>PARCutils</artifactId>
+            <version>1.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>PARC-UoA</groupId>
+            <artifactId>PARCutils-javadoc</artifactId>
+            <version>1.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>PARC-UoA</groupId>
+            <artifactId>PARCutils-src</artifactId>
+            <version>1.2.4</version>
+        </dependency>
+    ...
+</dependencies>
+        
+```
+then run the following in your cmd:
+```
+mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=PARCutils -Dversion=1.2.4 -Durl=file:./libs/ -DrepositoryId=PARCutils-1.2.4 -DupdateReleaseInfo=true -Dfile=libs/PARCutils-1.2.4.jar
+mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=PARCutils-javadoc -Dversion=1.2.4 -Durl=file:./libs/ -DrepositoryId=PARCutils-1.2.4 -DupdateReleaseInfo=true -Dfile=libs/PARCutils-1.2.4-javadoc.jar
+mvn deploy:deploy-file -DgroupId=PARC-UoA -DartifactId=PARCutils-src -Dversion=1.2.4 -Durl=file:./libs/ -DrepositoryId=PARCutils-1.2.4 -DupdateReleaseInfo=true -Dfile=libs/PARCutils-1.2.4-src.jar
+```
+finally:
+```
+mvn install:install-file -Dfile=libs/PARCutils-1.2.4.jar -DgroupId=PARC-UoA -DartifactId=PARCutils -Dversion=1.2.4 -Dpackaging=jar
+mvn install:install-file -Dfile=libs/PARCutils-1.2.4-javadoc.jar -DgroupId=PARC-UoA -DartifactId=PARCutils-javadoc -Dversion=1.2.4 -Dpackaging=jar
+mvn install:install-file -Dfile=libs/PARCutils-1.2.4-src.jar -DgroupId=PARC-UoA -DartifactId=PARCutils-src -Dversion=1.2.4 -Dpackaging=jar
+```
+
+## missing javadocs
+- add 3rd party javadocs from jar in IDEA: https://stackoverflow.com/questions/91307/attaching-additional-javadoc-in-intellij-idea
+- add 3rd party javadocs from jar in Eclipse: https://stackoverflow.com/questions/9289617/eclipse-how-to-link-a-jar-containing-javadocs-source-with-its-binary
