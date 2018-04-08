@@ -1,10 +1,22 @@
+import bbfs.BidirectionalBreadthFirstSearch;
+import fw.FloydWarshall;
+import graph.BasicDirectedGraph;
+import graph.DirectedEdge;
+import graph.GXLFileReader;
+import graph.Vertex;
+import iddfs.IterativeDeepeningDepthFirstSearch;
+import interfaces.Algorithm;
 import org.apache.commons.cli.*;
+
+import java.io.File;
 
 public class Main {
 
+    private static String userDir = System.getProperty("user.dir");
+
     public static void main(String[] args){
 
-        for (String s : args) {System.out.println(s);}
+        for (String s : args) {System.out.print(s+" ");}
 
         // create Options object
         Options options = new Options();
@@ -45,19 +57,13 @@ public class Main {
                 if (algo_name != null) {
                     switch (algo_name){
                         case "bbfs":
-                            // todo - link to bidirectional BFS modules
-                            // todo - flag 'f' handler, see the todo method call in the bottom
-                            System.out.println("BBFS dummy.");
+                            new Thread(new Dispatcher(new BidirectionalBreadthFirstSearch(fFlagHandler(cmd)))).start();
                             break;
                         case "iddfs":
-                            // todo - link to iterative deepening DFS modules
-                            // todo - flag 'f' handler, see the todo method call in the bottom
-                            System.out.println("IDDFS dummy.");
+                            new Thread(new Dispatcher(new IterativeDeepeningDepthFirstSearch(fFlagHandler(cmd)))).start();
                             break;
                         case "fw":
-                            // todo - link to Floyd-Warshall modules
-                            // todo - flag 'f' handler, see the todo method call in the bottom
-                            System.out.println("FW dummy.");
+                            new Thread(new Dispatcher(new FloydWarshall(fFlagHandler(cmd)))).start();
                             break;
                         default:
                             throw new ParseException("Execution failed due to unrecognizable argument value for " +
@@ -81,10 +87,61 @@ public class Main {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
-
     }
 
-    // todo - method to check if file arg is provided and if the file indeed exists
 
+    private static BasicDirectedGraph fFlagHandler (CommandLine cmd) throws ParseException{
+        if (cmd.getOptionValue("f") == null){
+            throw new ParseException("Execution failed due to missing '-f' flag and/or missing argument value for " +
+                    "'-f'. See usage via '-h' or '-help'");
+        }
+        String filename = cmd.getOptionValue("f");
+
+        System.out.println("\n" + filename);
+        System.out.println(userDir);
+
+
+        File xml = new File(userDir + File.separator + filename);
+        if (!xml.exists()){
+            throw new ParseException("Execution failed due to nonexistence of the supplied file. Make " +
+                    "sure the file exists under the project root directory. See example file: graph1.xml");
+        }
+
+        System.out.println(xml);
+
+        GXLFileReader reader = new GXLFileReader(xml);
+        if (reader.getName() == null){
+            throw new ParseException("Execution failed due to invalid type/format of the supplied graph. Make " +
+                    "sure the supplied file is a valid xml and has a root node called 'graph'. See example file: graph1.xml");
+        }
+
+        System.out.println(reader.getName());
+        System.out.println(reader.getType());
+        reader.getVertices().forEachRemaining(node -> System.out.println(node.getNodeName()+" : "+node.getTextContent()));
+        reader.getEdges().forEachRemaining(edge ->
+            System.out.println(edge.getNodeName() + " : " + edge.getFirstChild().getNodeName() + " "
+                    + edge.getFirstChild().getTextContent() + " " + edge.getLastChild().getNodeName() + " "
+                    + edge.getLastChild().getTextContent()));
+
+        BasicDirectedGraph basicDirectedGraph = (BasicDirectedGraph) BasicDirectedGraph.doLoad(reader);
+
+        System.out.println(basicDirectedGraph.verticesSet().size());
+        System.out.println(basicDirectedGraph.edgesSet().size());
+
+        return basicDirectedGraph;
+    }
+
+    static class Dispatcher<V extends Vertex, E extends DirectedEdge<V>> implements Runnable{
+
+        private Algorithm algorithm;
+
+        public Dispatcher(Algorithm<V, E> algorithm) {
+            this.algorithm = algorithm;
+        }
+
+        @Override
+        public void run() {
+            algorithm.doTheJob();
+        }
+    }
 }
