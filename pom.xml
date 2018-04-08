@@ -33,11 +33,6 @@
             <version>1.4</version>
         </dependency>
         <dependency>
-            <groupId>org.jgrapht</groupId>
-            <artifactId>jgrapht-core</artifactId>
-            <version>1.1.0</version>
-        </dependency>
-        <dependency>
             <groupId>PARC-UoA</groupId>
             <artifactId>annotation-based-PT</artifactId>
             <version>1.5.2</version>
