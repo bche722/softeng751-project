@@ -143,7 +143,7 @@ public class Main {
 
         private Algorithm algorithm;
 
-        public Dispatcher(Algorithm<V, E> algorithm) {
+        Dispatcher(Algorithm<V, E> algorithm) {
             this.algorithm = algorithm;
         }
 
