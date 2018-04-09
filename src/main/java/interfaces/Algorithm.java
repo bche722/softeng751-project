@@ -3,8 +3,10 @@ package interfaces;
 import graph.DirectedEdge;
 import graph.Vertex;
 
-public interface Algorithm<V extends Vertex, E extends DirectedEdge<V>> {
+public abstract class Algorithm<V extends Vertex, E extends DirectedEdge<V>> {
 
-    public void doTheJob();
+    protected boolean isParallel;
+
+    public abstract void doTheJob();
 
 }

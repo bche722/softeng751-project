@@ -25,12 +25,14 @@ public class Main {
         Option help2 = new Option( "help", "user manual" );
         Option algo_choice = new Option("a", true, "choose the algorithm to be executed");
         Option file_choice = new Option("f", true, "choose the graph to be processed");
+        Option isParallelized = new Option("p", false, "whether the execution is parallelized");
 
 
         options.addOption(help1);
         options.addOption(help2);
         options.addOption(algo_choice);
         options.addOption(file_choice);
+        options.addOption(isParallelized);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -55,15 +57,21 @@ public class Main {
                 String algo_name = cmd.getOptionValue("a");
 
                 if (algo_name != null) {
+                    boolean isParallel;
                     switch (algo_name){
                         case "bbfs":
-                            new Thread(new Dispatcher(new BidirectionalBreadthFirstSearch(fFlagHandler(cmd)))).start();
+                            isParallel = cmd.hasOption("p");
+                            new Thread(new Dispatcher(new BidirectionalBreadthFirstSearch(fFlagHandler(cmd), isParallel)))
+                                    .start();
                             break;
                         case "iddfs":
-                            new Thread(new Dispatcher(new IterativeDeepeningDepthFirstSearch(fFlagHandler(cmd)))).start();
+                            isParallel = cmd.hasOption("p");
+                            new Thread(new Dispatcher(new IterativeDeepeningDepthFirstSearch(fFlagHandler(cmd), isParallel)))
+                                    .start();
                             break;
                         case "fw":
-                            new Thread(new Dispatcher(new FloydWarshall(fFlagHandler(cmd)))).start();
+                            isParallel = cmd.hasOption("p");
+                            new Thread(new Dispatcher(new FloydWarshall(fFlagHandler(cmd), isParallel))).start();
                             break;
                         default:
                             throw new ParseException("Execution failed due to unrecognizable argument value for " +
