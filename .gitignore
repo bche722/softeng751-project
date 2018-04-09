@@ -33,7 +33,9 @@ hs_err_pid*
 */build
 
 # IntelliJ specific files/directories #
-# idea just in case (preferably do not use intellij because the lack of support for ParaTask)
+# actually we can use IntelliJ since we no longer rely on the keyword-based ParaTask, we use annotation-based ParaTask instead
+# no need to use eclipse plugin
+# (DO USE INTELLIJ BECAUSE IT IS WAY BETTER THAN ECLIPSE, PLS!!!!)
 #######################################
 out
 .idea
