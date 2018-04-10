@@ -7,7 +7,6 @@ import graph.Vertex;
 import iddfs.IterativeDeepeningDepthFirstSearch;
 import interfaces.Algorithm;
 import org.apache.commons.cli.*;
-import utils.Utilities;
 
 import java.io.File;
 
@@ -136,8 +135,7 @@ public class Main {
         System.out.println(basicDirectedGraph.verticesSet().size());
         System.out.println(basicDirectedGraph.edgesSet().size());
 
-        Utilities.graph = basicDirectedGraph;
-        return Utilities.graph;
+        return basicDirectedGraph;
     }
 
     static class Dispatcher<V extends Vertex, E extends DirectedEdge<V>> implements Runnable{
