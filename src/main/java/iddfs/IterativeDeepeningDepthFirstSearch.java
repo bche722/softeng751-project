@@ -5,7 +5,7 @@ import graph.DirectedEdge;
 import graph.Vertex;
 import interfaces.Algorithm;
 
-public class IterativeDeepeningDepthFirstSearch<V extends Vertex, E extends DirectedEdge<V>> extends Algorithm {
+public class IterativeDeepeningDepthFirstSearch<V extends Vertex, E extends DirectedEdge<V>> extends Algorithm<Vertex, DirectedEdge<Vertex>> {
 
     private BasicDirectedGraph<V, E> graph;
 
