@@ -25,11 +25,13 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     private BasicDirectedGraph<V, E> graph;
 
     // record the last step from source, the key is the CHILD, and the value is the PARENT, topological order:
-    // sourceFrontier -> sourceClose
+    // sourceFrontier -> sourceClose, it is prepared for route tracing at the end if displaying the full path is
+    // required.
     private ConcurrentHashMap<V, V> routeMapFromSource = new ConcurrentHashMap<>();
 
     // record the last step from sink, the key is the PARENT, and the value is the CHILD, topological order:
-    // sinkFrontier -> sinkClose
+    // sinkFrontier -> sinkClose, it is prepared for route tracing at the end if displaying the full path is
+    // required.
     private ConcurrentHashMap<V, V> routeMapFromSink = new ConcurrentHashMap<>();
 
     // record the cost for each node (each sub path FROM SOURCE) later on
@@ -116,42 +118,84 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             sinkFrontier.add(v);
         });
 
+        //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
+        int[] leastCostPathSoFar = {Integer.MAX_VALUE};
+
         // start searching
         while (loopCounter.get() >= 0) {
+
+            V[] dump = (V[]) new Vertex[]{null, null}; // dumps for source frontier and sink frontier, respectively
 
             if (loopCounter.get()%2 == 0) {
 
                 // source turn
                 V foo = sourceFrontier.poll();
+                if (foo == null) {
+                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
+                            " units");
+                    break;
+                }
+
+                System.out.println("source turn");
                 System.out.println("start with " + foo.name());
+                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
                 graph.childrenIterator(foo).forEachRemaining(child -> {
                     int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
-                    System.out.println("child name: " + child.name());
-                    sourceRouteCost.keySet().forEach(key -> System.out.println("key name: " + key.name()));
+
+//                    System.out.println("child name: " + child.name());
+//                    sourceRouteCost.keySet().forEach(key -> System.out.println("key name: " + key.name()));
 
                     if (newCost < sourceRouteCost.get(child)) {
                         sourceRouteCost.replace(child, newCost);
                         routeMapFromSource.put(child, foo); // frontier -> close
                     }
+
+                    // try to update the global least cost path so far
+                    if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
+                        int temp = newCost + sinkRouteCost.get(child) - child.weight();
+                        if (temp < leastCostPathSoFar[0]) {
+                            leastCostPathSoFar[0] = temp;
+                        }
+                    }
                 });
                 sourceClose.add(foo);
+                dump[0] = foo;
 
             } else {
 
                 // sink turn
                 V bar = sinkFrontier.poll();
+                if (bar == null) {
+                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
+                            " units");
+                    break;
+                }
+
+                System.out.println("sink turn");
+                System.out.println("start with " + bar.name());
+
                 graph.parentsIterator(bar).forEachRemaining(parent -> {
                     int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
                     if (newCost < sinkRouteCost.get(parent)) {
                         sinkRouteCost.replace(parent, newCost);
                         routeMapFromSink.put(parent, bar); // frontier -> close
                     }
+
+                    // try to update the global least cost path so far
+                    if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
+                        int temp = newCost + sourceRouteCost.get(parent) - parent.weight();
+                        if (temp < leastCostPathSoFar[0]) {
+                            leastCostPathSoFar[0] = temp;
+                        }
+                    }
                 });
                 sinkClose.add(bar);
+                dump[1] = bar;
 
             }
 
-            // stopping criterion: check collision
+            // stopping criterion 1 : check collision (keep it as a backup in case something gets screwed up later)
+            /*
             ArrayList<V> collidingZone = new ArrayList<>(sourceClose);
             System.out.println("sourceClose size: " + sourceClose.size());
             System.out.println("sinkClose size: " + sinkClose.size());
@@ -170,6 +214,18 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                         " units");
                 break;
             }
+            */
+
+            // stopping criterion 2 : using a global least cost path (so far) and compare it with the sum of both heap
+            // tops (dump[0] and dump[1]) in every iteration
+            if (dump[0] != null && dump[1] != null) {
+                System.out.println("checking criterion now: dump0 -> " + dump[0] + " dump1 -> " +dump[1]);
+                if (sourceRouteCost.get(dump[0]) + sinkRouteCost.get(dump[0]) >= leastCostPathSoFar[0]) {
+                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
+                            " units");
+                    break;
+                }
+            }
 
             // increment the counter
             loopCounter.addAndGet(1);
@@ -177,8 +233,24 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         }
     }
 
-    private V getKeyObjByName(){
-        return null;
+    /**
+     * Addition helper takes care of Integer.MAX_VALUE and null.
+     * This method is specialized to calculate least cost path.
+     * Do use it for normal additions.
+     * @param myCost - int
+     * @param edgeCost - int
+     * @param yourCost - int
+     * @param hisCost - int
+     * @return int - the sum
+     */
+    private int costAdder(int myCost, int edgeCost, int yourCost, int hisCost){ // todo
+
+        if (myCost == Integer.MAX_VALUE || edgeCost == Integer.MAX_VALUE || yourCost == Integer.MAX_VALUE
+                || hisCost == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        } else {
+            return myCost + edgeCost + yourCost + hisCost;
+        }
     }
 
 
