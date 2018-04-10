@@ -7,6 +7,7 @@ import graph.Vertex;
 import iddfs.IterativeDeepeningDepthFirstSearch;
 import interfaces.Algorithm;
 import org.apache.commons.cli.*;
+import utils.Utilities;
 
 import java.io.File;
 
@@ -61,17 +62,15 @@ public class Main {
                     switch (algo_name){
                         case "bbfs":
                             isParallel = cmd.hasOption("p");
-                            new Thread(new Dispatcher(new BidirectionalBreadthFirstSearch(fFlagHandler(cmd), isParallel)))
-                                    .start();
+                            new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearch<>(fFlagHandler(cmd), isParallel))).start();
                             break;
                         case "iddfs":
                             isParallel = cmd.hasOption("p");
-                            new Thread(new Dispatcher(new IterativeDeepeningDepthFirstSearch(fFlagHandler(cmd), isParallel)))
-                                    .start();
+                            new Thread(new Dispatcher<>(new IterativeDeepeningDepthFirstSearch<>(fFlagHandler(cmd), isParallel))).start();
                             break;
                         case "fw":
                             isParallel = cmd.hasOption("p");
-                            new Thread(new Dispatcher(new FloydWarshall(fFlagHandler(cmd), isParallel))).start();
+                            new Thread(new Dispatcher<>(new FloydWarshall<>(fFlagHandler(cmd), isParallel))).start();
                             break;
                         default:
                             throw new ParseException("Execution failed due to unrecognizable argument value for " +
@@ -98,7 +97,7 @@ public class Main {
     }
 
 
-    private static BasicDirectedGraph fFlagHandler (CommandLine cmd) throws ParseException{
+    private static BasicDirectedGraph<Vertex, DirectedEdge<Vertex>> fFlagHandler (CommandLine cmd) throws ParseException{
         if (cmd.getOptionValue("f") == null){
             throw new ParseException("Execution failed due to missing '-f' flag and/or missing argument value for " +
                     "'-f'. See usage via '-h' or '-help'");
@@ -131,25 +130,23 @@ public class Main {
                     + edge.getFirstChild().getTextContent() + " " + edge.getLastChild().getNodeName() + " "
                     + edge.getLastChild().getTextContent()));
 
-        BasicDirectedGraph basicDirectedGraph = (BasicDirectedGraph) BasicDirectedGraph.doLoad(reader);
+        BasicDirectedGraph<Vertex, DirectedEdge<Vertex>> basicDirectedGraph =
+                (BasicDirectedGraph<Vertex, DirectedEdge<Vertex>>) BasicDirectedGraph.doLoad(reader);
 
         System.out.println(basicDirectedGraph.verticesSet().size());
         System.out.println(basicDirectedGraph.edgesSet().size());
 
-        return basicDirectedGraph;
+        Utilities.graph = basicDirectedGraph;
+        return Utilities.graph;
     }
 
     static class Dispatcher<V extends Vertex, E extends DirectedEdge<V>> implements Runnable{
 
         private Algorithm algorithm;
 
-        Dispatcher(Algorithm<V, E> algorithm) {
-            this.algorithm = algorithm;
-        }
+        Dispatcher(Algorithm<V, E> algorithm) { this.algorithm = algorithm; }
 
         @Override
-        public void run() {
-            algorithm.doTheJob();
-        }
+        public void run() { algorithm.doTheJob(); }
     }
 }
