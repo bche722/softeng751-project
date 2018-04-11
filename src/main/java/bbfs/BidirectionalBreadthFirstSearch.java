@@ -6,12 +6,10 @@ import graph.Vertex;
 import interfaces.Algorithm;
 import utils.CostComparatorForVertices;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.PriorityQueue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An implementation of bidirectional breadth first search with heuristic h(x) = 0.
@@ -43,6 +41,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     private AtomicInteger loopCounter = new AtomicInteger();
     private V source;
     private V sink;
+
+    private final ReentrantLock reentrantLock = new ReentrantLock();
 
     public BidirectionalBreadthFirstSearch(BasicDirectedGraph<V, E> graph, boolean isParallel) {
         this.graph = graph;
@@ -98,24 +98,11 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         // preparation
         graph.vertices().forEach(v -> {
-            if (v.name().equals(source.name())) {
 
-                sourceRouteCost.put(v, v.weight());
-                sinkRouteCost.put(v, Integer.MAX_VALUE);
-
-            } else if (v.name().equals(sink.name())){
-
-                sourceRouteCost.put(v, Integer.MAX_VALUE);
-                sinkRouteCost.put(v, v.weight());
-
-            } else {
-
-                sourceRouteCost.put(v, Integer.MAX_VALUE);
-                sinkRouteCost.put(v, Integer.MAX_VALUE);
-
-            }
+            prepareMaps(v);
             sourceFrontier.add(v);
             sinkFrontier.add(v);
+
         });
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
@@ -247,26 +234,103 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
     /**
      * Addition helper takes care of Integer.MAX_VALUE and null.
-     * This method is specialized to calculate least cost path.
-     * Do use it for normal additions.
+     * This method is specialized to calculate path cost for sub paths.
+     * Do not use it for normal additions.
      * @param myCost - int
      * @param edgeCost - int
      * @param yourCost - int
-     * @param hisCost - int
      * @return int - the sum
      */
-    private int costAdder(int myCost, int edgeCost, int yourCost, int hisCost){ // todo
+    private int costAdder(int myCost, int edgeCost, int yourCost){ // todo - use this for newCost in parallel version
 
-        if (myCost == Integer.MAX_VALUE || edgeCost == Integer.MAX_VALUE || yourCost == Integer.MAX_VALUE
-                || hisCost == Integer.MAX_VALUE) {
+        if (myCost == Integer.MAX_VALUE || edgeCost == Integer.MAX_VALUE || yourCost == Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         } else {
-            return myCost + edgeCost + yourCost + hisCost;
+            return myCost + edgeCost + yourCost;
+        }
+    }
+
+    private void prepareMaps(V v) {
+        if (v.name().equals(source.name())) {
+
+            sourceRouteCost.put(v, v.weight());
+            sinkRouteCost.put(v, Integer.MAX_VALUE);
+
+        } else if (v.name().equals(sink.name())){
+
+            sourceRouteCost.put(v, Integer.MAX_VALUE);
+            sinkRouteCost.put(v, v.weight());
+
+        } else {
+
+            sourceRouteCost.put(v, Integer.MAX_VALUE);
+            sinkRouteCost.put(v, Integer.MAX_VALUE);
+
         }
     }
 
 
     private void parallelSearch(){
-        //todo
+
+        // every insertion and removal of element must be synchronized - use the lock for every critical region
+        PriorityQueue<V> sourceFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sourceRouteCost));
+        PriorityQueue<V> sinkFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sinkRouteCost));
+
+        // every insertion and removal of element must be synchronized - use the lock for every critical region
+        HashSet<V> sourceClose = new HashSet<>(); // avoid duplicates induced by concurrent access
+        HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
+
+        // preparation
+        graph.vertices().forEach(v -> {
+
+            prepareMaps(v);
+
+            reentrantLock.lock();
+            try {
+                sourceFrontier.add(v);
+                sinkFrontier.add(v);
+            } finally {
+                reentrantLock.unlock();
+            }
+
+        });
+
+        //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
+        int[] leastCostPathSoFar = {Integer.MAX_VALUE};
+
+        // initialize dumps (heap tops) for source frontier and sink frontier, respectively
+        int[] dump = new int[]{0, 0};
+
+        // start searching - using stopping criterion 2
+        // todo - use @PT to parallelize this loop, **use reduction at the end to find the least cost if possible**
+        while (!(dump[0] != 0 && dump[1] != 0 && dump[0] + dump[1] >= leastCostPathSoFar[0])) {
+
+            if (loopCounter.get()%2 == 0) {
+
+                // source turn
+
+                //todo - use locks for critical regions i.e. deque, insertion, Write-After-Read etc, for queues and sets
+
+                //todo - every usage of Iterator/Iterable must be switched to ParIterator
+
+                //todo - use costAdder for newCost in parallel version (polling from frontier can be out of order)
+
+            } else {
+
+                // sink turn
+
+                //todo - use locks for critical regions i.e. deque, insertion, Write-After-Read etc, for queues and sets
+
+                //todo - every usage of Iterator/Iterable must be switched to ParIterator
+
+                //todo - use costAdder for newCost in parallel version (polling from frontier can be out of order)
+
+            }
+
+            // increment the counter
+            loopCounter.addAndGet(1);
+
+        }
+
     }
 }
