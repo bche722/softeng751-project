@@ -336,5 +336,10 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         }
 
+        //todo - **join and reduce**, each thread can (?) potentially hold a distinct version of leastCostPathSoFar[0]
+        //todo - depending on the implementation => one single global copy OR individual copies of leastCostPathSoFar[0]
+
+        System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] + " units");
+
     }
 }
