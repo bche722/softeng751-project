@@ -121,12 +121,17 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
 
+        // initialize dumps (heap tops) for source frontier and sink frontier, respectively
+        int[] dump = new int[]{0, 0};
+
         // start searching
         while (loopCounter.get() >= 0) {
 
-            V[] dump = (V[]) new Vertex[]{null, null}; // dumps for source frontier and sink frontier, respectively
-
             if (loopCounter.get()%2 == 0) {
+
+                System.out.println("source turn");
+                sourceFrontier.forEach(v -> System.out.print(v.name() + " " + sourceRouteCost.get(v) + "   "));
+                System.out.println("");
 
                 // source turn
                 V foo = sourceFrontier.poll();
@@ -136,9 +141,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     break;
                 }
 
-                System.out.println("source turn");
                 System.out.println("start with " + foo.name());
-                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
+
                 graph.childrenIterator(foo).forEachRemaining(child -> {
                     int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
 
@@ -159,9 +163,15 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     }
                 });
                 sourceClose.add(foo);
-                dump[0] = foo;
+                dump[0] = sourceRouteCost.get(foo);
+
+                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
 
             } else {
+
+                System.out.println("sink turn");
+                sinkFrontier.forEach(v -> System.out.print(v.name() + " : " + sinkRouteCost.get(v) + "   "));
+                System.out.println("");
 
                 // sink turn
                 V bar = sinkFrontier.poll();
@@ -171,7 +181,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     break;
                 }
 
-                System.out.println("sink turn");
                 System.out.println("start with " + bar.name());
 
                 graph.parentsIterator(bar).forEachRemaining(parent -> {
@@ -190,8 +199,9 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     }
                 });
                 sinkClose.add(bar);
-                dump[1] = bar;
+                dump[1] = sinkRouteCost.get(bar);
 
+                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
             }
 
             // stopping criterion 1 : check collision (keep it as a backup in case something gets screwed up later)
@@ -216,11 +226,13 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             }
             */
 
+            System.out.println("dump0 -> " + dump[0] + " dump1 -> " +dump[1]);
+
             // stopping criterion 2 : using a global least cost path (so far) and compare it with the sum of both heap
             // tops (dump[0] and dump[1]) in every iteration
-            if (dump[0] != null && dump[1] != null) {
-                System.out.println("checking criterion now: dump0 -> " + dump[0] + " dump1 -> " +dump[1]);
-                if (sourceRouteCost.get(dump[0]) + sinkRouteCost.get(dump[0]) >= leastCostPathSoFar[0]) {
+            if (dump[0] != 0 && dump[1] != 0) {
+                System.out.println("checking criterion now");
+                if (dump[0] + dump[1] >= leastCostPathSoFar[0]) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
                             " units");
                     break;
