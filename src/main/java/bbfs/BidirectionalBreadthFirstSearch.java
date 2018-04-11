@@ -302,12 +302,22 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         int[] dump = new int[]{0, 0};
 
         // start searching - using stopping criterion 2
-        // todo - use @PT to parallelize this loop, **use reduction at the end to find the least cost if possible**
+        // todo - (?) use @PT to parallelize this loop, **use reduction at the end to find the least cost if possible**
+        // todo - MAYBE NOT parallelize this outer loop, since there is a strong loop dependence in frontiers
+        // todo - Possible to parallelize inner loops since branching adjacent nodes does not interfere each other
         while (!(dump[0] != 0 && dump[1] != 0 && dump[0] + dump[1] >= leastCostPathSoFar[0])) {
+
+            // todo - outer loop has a strong inter-loop dependence, due to frontiers
+
+            // todo - inner loops depends on outer loop iterations, but there is no intra-loop dependence among them
+
+            // todo - parallelizing inner loops can prevent the application suffering from those huge branching factors
 
             if (loopCounter.get()%2 == 0) {
 
                 // source turn
+
+                //todo - the inner loop branching on CHILDREN can be a good candidate for parallelization
 
                 //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
 
@@ -320,6 +330,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             } else {
 
                 // sink turn
+
+                //todo - the inner loop branching on PARENTS can be a good candidate for parallelization
 
                 //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
 
@@ -338,6 +350,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         //todo - **join and reduce**, each thread can (?) potentially hold a distinct version of leastCostPathSoFar[0]
         //todo - depending on the implementation => one single global copy OR individual copies of leastCostPathSoFar[0]
+        //todo - no need fot a shared leastCostPathSoFar[0] if parallelizing inner loops instead of the outer loop
 
         System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] + " units");
 
