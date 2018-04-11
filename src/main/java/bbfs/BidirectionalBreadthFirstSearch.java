@@ -309,21 +309,25 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
                 // source turn
 
-                //todo - use locks for critical regions i.e. deque, insertion, Write-After-Read etc, for queues and sets
+                //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
+
+                //todo - use locks for critical regions like Write-After-Read for calculating and updating costs
 
                 //todo - every usage of Iterator/Iterable must be switched to ParIterator
 
-                //todo - use costAdder for newCost in parallel version (polling from frontier can be out of order)
+                //todo - use costAdder for newCost in parallel version (polling from the frontier can be out of order)
 
             } else {
 
                 // sink turn
 
-                //todo - use locks for critical regions i.e. deque, insertion, Write-After-Read etc, for queues and sets
+                //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
+
+                //todo - use locks for critical regions like Write-After-Read for calculating and updating costs
 
                 //todo - every usage of Iterator/Iterable must be switched to ParIterator
 
-                //todo - use costAdder for newCost in parallel version (polling from frontier can be out of order)
+                //todo - use costAdder for newCost in parallel version (polling from the frontier can be out of order)
 
             }
 
