@@ -12,9 +12,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomGraphGenerator {
 
-    public static boolean isMultiSourcesAndOrSinks = false;
-    public static int numOfSources = 1;
-    public static int numOfSinks = 1;
+    static boolean isMultiSourcesAndOrSinks = false;
+    static int numOfSources = 1;
+    static int numOfSinks = 1;
 
     private static String userDir = System.getProperty("user.dir");
 
