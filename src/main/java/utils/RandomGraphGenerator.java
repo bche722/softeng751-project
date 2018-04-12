@@ -12,6 +12,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomGraphGenerator {
 
+    public static boolean isMultiSourcesAndOrSinks = false;
+    public static int numOfSources = 1;
+    public static int numOfSinks = 1;
+
     private static String userDir = System.getProperty("user.dir");
 
     private static int numberOfNodes;
@@ -25,8 +29,13 @@ public class RandomGraphGenerator {
         Option nflag = new Option( "n", true, "number of nodes" );
         Option fflag = new Option( "b", true, "branching factor" );
 
+        Option nsources = new Option( "sources", true, "number of sources (default 1)" );
+        Option nsinks = new Option( "sinks", true, "number of sinks (default 1)" );
+
         options.addOption(nflag);
         options.addOption(fflag);
+        options.addOption(nsources);
+        options.addOption(nsinks);
 
         CommandLineParser parser = new DefaultParser();
 
@@ -46,6 +55,18 @@ public class RandomGraphGenerator {
             }
             branchingFactor = Integer.parseInt(bfactor);
 
+            String numberOfSources = cmd.getOptionValue("sources");
+            if (numberOfSources != null) {
+                isMultiSourcesAndOrSinks = true;
+                numOfSources = Integer.parseInt(numberOfSources);
+            }
+
+            String numberOfSinks = cmd.getOptionValue("sinks");
+            if (numberOfSinks != null) {
+                isMultiSourcesAndOrSinks = true;
+                numOfSinks = Integer.parseInt(numberOfSinks);
+            }
+
             // start generating the output xml in the project root dir
             generate();
 
@@ -59,7 +80,11 @@ public class RandomGraphGenerator {
 
         int graphID = ThreadLocalRandom.current().nextInt(0, 10000);
 
-        String filename = "graph" + graphID + ".xml";
+        String filename = "graph" + graphID + "--bFactor-" + RandomGraphGenerator.branchingFactor + ".xml";
+
+        if (isMultiSourcesAndOrSinks) {
+            filename = "graph" + graphID + "multi" + "--bFactor-" + RandomGraphGenerator.branchingFactor + ".xml";
+        }
 
         File outputXML = new File(userDir + File.separator + filename);
         if (!outputXML.exists()) {
@@ -117,50 +142,114 @@ class LittleWorker {
 
     private void letMeDoItBro(){
 
-        nodeQueue.add(new Node("source",
-                Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString()));
+        for (int i = 0; i < RandomGraphGenerator.numOfSources; i++) {
+
+            nodeQueue.add(new Node("source" + i,
+                    Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString()));
+
+        }
+
 
         for (int i = 0; i < numberOfNodes - 1; i++){
 
             // add up number of junctures so far and the number of presenting leaves
             if (i + nodeQueue.size() >= numberOfNodes) {
 
-                Node sink = new Node("sink",
-                        Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString());
+                ArrayList<Node> lastLeaves = new ArrayList<>(nodeQueue);
 
-                int id = 0;
+                if (RandomGraphGenerator.isMultiSourcesAndOrSinks) {
 
-                while (!nodeQueue.isEmpty()) {
+                    lastLeaves.forEach(leaf -> {
 
-                    Node leaf = nodeQueue.pop();
+                        try {
+                            fileWriter.append(leaf.toString());
+                            System.out.println("write7");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
 
+                    });
+
+                    for (int l = 0; l < RandomGraphGenerator.numOfSinks; l++) {
+
+                        Node sink = new Node("sink" + l,
+                                Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString());
+
+                        lastLeaves.forEach(leaf -> {
+
+                            Edge edge = new Edge("edge" + leaf.name + "ToSink" + sink.name, leaf.name, sink.name,
+                                    Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString());
+
+                            try {
+                                fileWriter.append(edge.toString());
+                                System.out.println("write8");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                        });
+
+                        try {
+                            fileWriter.append(sink.toString());
+                            System.out.println("write9");
+
+                            fileWriter.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                    // add information about the depth
                     try {
-                        fileWriter.append(leaf.toString());
-                        System.out.println("write1");
+                        fileWriter.append("<depth type=\"level\">").append(String.valueOf(i + 1)).append("</depth>\n");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
 
-                    Edge edge = new Edge("edge" + id + "ToSink", leaf.name, sink.name,
+                } else {
+
+                    Node sink = new Node("sink",
                             Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString());
 
+                    int id = 0;
+
+                    while (!nodeQueue.isEmpty()) {
+
+                        Node leaf = nodeQueue.pop();
+
+                        try {
+                            fileWriter.append(leaf.toString());
+                            System.out.println("write1");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        Edge edge = new Edge("edge" + id + "ToSink", leaf.name, sink.name,
+                                Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100)).toString());
+
+                        try {
+                            fileWriter.append(edge.toString());
+                            System.out.println("write2");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        id++;
+
+                    }
+
                     try {
-                        fileWriter.append(edge.toString());
-                        System.out.println("write2");
+                        fileWriter.append(sink.toString());
+                        System.out.println("write3");
+
+                        // add information about the depth
+                        fileWriter.append("<depth type=\"level\">").append(String.valueOf(i + 1)).append("</depth>\n");
+
+                        fileWriter.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
-                    id++;
-
-                }
-
-                try {
-                    fileWriter.append(sink.toString());
-                    System.out.println("write3");
-                    fileWriter.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
 
                 break;
