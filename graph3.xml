@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<graph id="graph3" edgemode="directed">
+
+    <node>
+        <Name name="name">A</Name>
+        <Weight name="weight" type="int">1</Weight>
+    </node>
+    <node>
+        <Name name="name">B</Name>
+        <Weight name="weight" type="int">1</Weight>
+    </node>
+
+    <edge id="AB" from="A" to="B">
+        <Weight name="weight" type="int">7</Weight>
+    </edge>
+
+</graph>

@@ -82,7 +82,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         } else {
 
-            //todo - sequential implementation goes here
             sequentialSearch();
 
         }
