@@ -96,8 +96,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         ArrayList<V> sourceFrontier = new ArrayList<>();
         ArrayList<V> sinkFrontier = new ArrayList<>();
 
-        ArrayList<V> sourceClose = new ArrayList<>();
-        ArrayList<V> sinkClose = new ArrayList<>();
+        HashSet<V> sourceClose = new HashSet<>();
+        HashSet<V> sinkClose = new HashSet<>();
 
         // preparation
         graph.vertices().forEach(v -> {
@@ -281,9 +281,12 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
     private void parallelSearch(){
 
+        CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
+        CostComparatorForVertices<V, E> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
+
         // every insertion and removal of element must be synchronized - use the lock for every critical region
-        PriorityQueue<V> sourceFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sourceRouteCost));
-        PriorityQueue<V> sinkFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sinkRouteCost));
+        ArrayList<V> sourceFrontier = new ArrayList<>();
+        ArrayList<V> sinkFrontier = new ArrayList<>();
 
         // every insertion and removal of element must be synchronized - use the lock for every critical region
         HashSet<V> sourceClose = new HashSet<>(); // avoid duplicates induced by concurrent access
@@ -303,6 +306,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             }
 
         });
+        sourceFrontier.sort(sourceComparator);
+        sinkFrontier.sort(sinkComparator);
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
