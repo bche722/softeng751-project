@@ -83,6 +83,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         } else {
 
             sequentialSearch();
+            System.out.println("The process took: " + loopCounter.get() + " iterations");
 
         }
     }
