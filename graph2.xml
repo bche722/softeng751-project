@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<graph id="graph2" edgemode="directed">
+    <node>
+        <Name name="name">A</Name>
+        <Weight name="weight" type="int">5</Weight>
+    </node>
+    <node>
+        <Name name="name">B</Name>
+        <Weight name="weight" type="int">1</Weight>
+    </node>
+    <node>
+        <Name name="name">C</Name>
+        <Weight name="weight" type="int">7</Weight>
+    </node>
+    <node>
+        <Name name="name">D</Name>
+        <Weight name="weight" type="int">8</Weight>
+    </node>
+    <node>
+        <Name name="name">E</Name>
+        <Weight name="weight" type="int">13</Weight>
+    </node>
+    <node>
+        <Name name="name">F</Name>
+        <Weight name="weight" type="int">2</Weight>
+    </node>
+    <node>
+        <Name name="name">G</Name>
+        <Weight name="weight" type="int">4</Weight>
+    </node>
+    <node>
+        <Name name="name">H</Name>
+        <Weight name="weight" type="int">9</Weight>
+    </node>
+    <node>
+        <Name name="name">I</Name>
+        <Weight name="weight" type="int">3</Weight>
+    </node>
+
+
+    <edge id="AB" from="A" to="B">
+        <Weight name="weight" type="int">2</Weight>
+    </edge>
+    <edge id="AC" from="A" to="C">
+        <Weight name="weight" type="int">3</Weight>
+    </edge>
+    <edge id="AD" from="A" to="D">
+        <Weight name="weight" type="int">4</Weight>
+    </edge>
+    <edge id="BE" from="B" to="E">
+        <Weight name="weight" type="int">5</Weight>
+    </edge>
+    <edge id="CE" from="C" to="E">
+        <Weight name="weight" type="int">14</Weight>
+    </edge>
+    <edge id="CF" from="C" to="F">
+        <Weight name="weight" type="int">6</Weight>
+    </edge>
+    <edge id="DF" from="D" to="F">
+        <Weight name="weight" type="int">7</Weight>
+    </edge>
+    <edge id="EG" from="E" to="G">
+        <Weight name="weight" type="int">9</Weight>
+    </edge>
+    <edge id="FG" from="F" to="G">
+        <Weight name="weight" type="int">10</Weight>
+    </edge>
+    <edge id="FH" from="F" to="H">
+        <Weight name="weight" type="int">11</Weight>
+    </edge>
+    <edge id="DH" from="D" to="H">
+        <Weight name="weight" type="int">8</Weight>
+    </edge>
+    <edge id="GI" from="G" to="I">
+        <Weight name="weight" type="int">12</Weight>
+    </edge>
+    <edge id="HI" from="H" to="I">
+        <Weight name="weight" type="int">13</Weight>
+    </edge>
+
+</graph>

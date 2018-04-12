@@ -90,8 +90,11 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
     private void sequentialSearch(){
 
-        PriorityQueue<V> sourceFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sourceRouteCost));
-        PriorityQueue<V> sinkFrontier = new PriorityQueue<>(new CostComparatorForVertices<>(sinkRouteCost));
+        CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
+        CostComparatorForVertices<V, E> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
+
+        ArrayList<V> sourceFrontier = new ArrayList<>();
+        ArrayList<V> sinkFrontier = new ArrayList<>();
 
         ArrayList<V> sourceClose = new ArrayList<>();
         ArrayList<V> sinkClose = new ArrayList<>();
@@ -104,6 +107,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             sinkFrontier.add(v);
 
         });
+        sourceFrontier.sort(sourceComparator);
+        sinkFrontier.sort(sinkComparator);
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
@@ -121,12 +126,14 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 System.out.println("");
 
                 // source turn
-                V foo = sourceFrontier.poll();
-                if (foo == null) {
+                if (sourceFrontier.isEmpty()) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
                             " units");
                     break;
                 }
+                sourceFrontier.sort(sourceComparator);
+                V foo = sourceFrontier.get(0);
+                sourceFrontier.remove(foo);
 
                 System.out.println("start with " + foo.name());
 
@@ -161,12 +168,14 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 System.out.println("");
 
                 // sink turn
-                V bar = sinkFrontier.poll();
-                if (bar == null) {
+                if (sinkFrontier.isEmpty()) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
                             " units");
                     break;
                 }
+                sinkFrontier.sort(sinkComparator);
+                V bar = sinkFrontier.get(0);
+                sinkFrontier.remove(bar);
 
                 System.out.println("start with " + bar.name());
 
