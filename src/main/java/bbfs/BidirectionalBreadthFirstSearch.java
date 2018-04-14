@@ -1,15 +1,19 @@
 package bbfs;
 
+import apt.annotations.Future;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
 import graph.Vertex;
 import interfaces.Algorithm;
+import pu.RedLib.Reducible;
+import pu.RedLib.Reduction;
+import pu.pi.ParIterator;
+import pu.pi.ParIteratorFactory;
 import utils.CostComparatorForVertices;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An implementation of bidirectional breadth first search with heuristic h(x) = 0.
@@ -42,7 +46,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     private V source;
     private V sink;
 
-    private final ReentrantLock reentrantLock = new ReentrantLock();
+
 
     public BidirectionalBreadthFirstSearch(BasicDirectedGraph<V, E> graph, boolean isParallel) {
         this.graph = graph;
@@ -79,6 +83,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         if (isParallel){
 
             //todo - parallel implementation goes here
+            parallelSearch();
+            System.out.println("The process took: " + loopCounter.get() + " iterations");
 
         } else {
 
@@ -107,8 +113,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             sinkFrontier.add(v);
 
         });
-        sourceFrontier.sort(sourceComparator);
-        sinkFrontier.sort(sinkComparator);
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
@@ -222,7 +226,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             }
             */
 
-            System.out.println("dump0 -> " + dump[0] + " dump1 -> " +dump[1]);
+            System.out.println("dump0 -> " + dump[0] + " dump1 -> " + dump[1]);
 
             // stopping criterion 2 : using a global least cost path (so far) and compare it with the sum of both heap
             // tops (dump[0] and dump[1]) in every iteration
@@ -231,6 +235,11 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 if (dump[0] + dump[1] >= leastCostPathSoFar[0]) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
                             " units");
+                    // increment the counter, this is indeed not required by the loop semantic, it is purely for the
+                    // purpose of statistics, because the parallel version still increments the counter in the very
+                    // last iteration. hence, this extra increment in sequential version is just for the sake of
+                    // simulating an identical behavior as in the parallel version.
+                    loopCounter.addAndGet(1);
                     break;
                 }
             }
@@ -279,6 +288,94 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+    // below is the parallel version
+
+
+    private Reducible<Integer> sourceLocalMin = new Reducible<>(Integer.MAX_VALUE);
+    private Reducible<Integer> sinkLocalMin = new Reducible<>(Integer.MAX_VALUE);
+
+    private Void populateDataStructures(ArrayList<V> sourceFrontier, ArrayList<V> sinkFrontier, V v){
+
+        prepareMaps(v);
+        sourceFrontier.add(v);
+        sinkFrontier.add(v);
+        return null;
+
+    }
+
+    /**
+     * a sub-task representing the computation to update the child's cost as well as to calculate the local least cost
+     * @param foo - V, the parent node
+     * @param child - V, the child node
+     * @return int - local least cost
+     */
+    private int sourceTask(V foo, V child) {
+
+        System.out.println(foo);
+        System.out.println(child);
+        System.out.println(sourceRouteCost.get(foo));
+
+        int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
+
+        // try to update the child's priority
+        if (newCost < sourceRouteCost.get(child)) {
+            sourceRouteCost.replace(child, newCost);
+            routeMapFromSource.put(child, foo); // frontier -> close
+        }
+
+        // try to update the local least cost path so far
+        int localLeastCost;
+        if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
+            localLeastCost = newCost + sinkRouteCost.get(child) - child.weight();
+            if (localLeastCost < sourceLocalMin.get()) {
+                sourceLocalMin.set(localLeastCost);
+            }
+        } else {
+            localLeastCost = Integer.MAX_VALUE;
+        }
+
+        return localLeastCost; // just in case if manual reduction is needed (i.e., if Reducible bugs out)
+    }
+
+    /**
+     * a sub-task representing the computation to update the child's cost as well as to calculate the local least cost
+     * @param bar - V, the parent node
+     * @param parent - V, the child node
+     * @return int - local least cost
+     */
+    private int sinkTask(V bar, V parent) {
+
+        int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
+        if (newCost < sinkRouteCost.get(parent)) {
+            sinkRouteCost.replace(parent, newCost);
+            routeMapFromSink.put(parent, bar); // frontier -> close
+        }
+
+        // try to update the local least cost path so far
+        int localLeastCost;
+        if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
+            localLeastCost = newCost + sourceRouteCost.get(parent) - parent.weight();
+            if (localLeastCost < sinkLocalMin.get()) {
+                sinkLocalMin.set(localLeastCost);
+            }
+        } else {
+            localLeastCost = Integer.MAX_VALUE;
+        }
+
+        return localLeastCost; // just in case if manual reduction is needed (i.e., if Reducible bugs out)
+    }
+
     private void parallelSearch(){
 
         CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
@@ -293,27 +390,21 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
 
         // preparation
-        graph.vertices().forEach(v -> {
-
-            prepareMaps(v);
-
-            reentrantLock.lock();
-            try {
-                sourceFrontier.add(v);
-                sinkFrontier.add(v);
-            } finally {
-                reentrantLock.unlock();
-            }
-
-        });
-        sourceFrontier.sort(sourceComparator);
-        sinkFrontier.sort(sinkComparator);
+        @Future
+        Void[] populatorPromises = new Void[graph.verticesSet().size()];
+        Iterator<V> vertexIterator = graph.vertices().iterator();
+        for (int i = 0; i < graph.verticesSet().size(); i++) {
+            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
+        }
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
 
         // initialize dumps (heap tops) for source frontier and sink frontier, respectively
         int[] dump = new int[]{0, 0};
+
+        // explicit barrier for populatorPromises, make sure every data structure is ready
+        while (populatorPromises[0] != null) {}; // busy wait
 
         // start searching - using stopping criterion 2
         // todo - (?) use @PT to parallelize this loop, **use reduction at the end to find the least cost if possible**
@@ -330,6 +421,42 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             if (loopCounter.get()%2 == 0) {
 
                 // source turn
+                if (sourceFrontier.isEmpty()) {
+                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
+                            " units");
+                    break;
+                }
+                sourceFrontier.sort(sourceComparator);
+                V foo = sourceFrontier.get(0);
+                sourceFrontier.remove(foo);
+
+                ArrayList<V> childrenArray = graph.getChilds(foo);
+                int size = childrenArray.size();
+                @Future
+                int[] costPromises = new int[size];
+                ParIterator<V> childrenIteratorPar = ParIteratorFactory.createParIterator(childrenArray,
+                        Runtime.getRuntime().availableProcessors());
+                for (int i = 0; i < size; i++) {
+                    costPromises[i] = sourceTask(foo, childrenIteratorPar.next());
+                }
+                // explicit barrier to make sure all promises have been resolved
+                int temp;
+                if (costPromises.length != 0) {
+                    temp = costPromises[0];
+                }
+                // perform the reduction
+                temp = sourceLocalMin.reduce(Reduction.IntegerMIN);
+
+                // try to update the GLOBAL least cost path so far
+                if (temp < leastCostPathSoFar[0]) {
+                    leastCostPathSoFar[0] = temp;
+                }
+
+                sourceClose.add(foo);
+                dump[0] = sourceRouteCost.get(foo);
+
+                // reinitialize sourceLocalMin because it should be scoped to each inner iteration
+                sourceLocalMin = new Reducible<>(Integer.MAX_VALUE);
 
                 //todo - the inner loop branching on CHILDREN can be a good candidate for parallelization
 
@@ -344,6 +471,43 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             } else {
 
                 // sink turn
+                if (sinkFrontier.isEmpty()) {
+                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
+                            " units");
+                    break;
+                }
+                sinkFrontier.sort(sinkComparator);
+                V bar = sinkFrontier.get(0);
+                sinkFrontier.remove(bar);
+
+                ArrayList<V> parentsArray = graph.getParents(bar);
+                int size = parentsArray.size();
+                @Future
+                int[] costPromises = new int[size];
+                ParIterator<V> parentsIteratorPar = ParIteratorFactory.createParIterator(parentsArray, Runtime
+                        .getRuntime().availableProcessors());
+                for (int i = 0; i < size; i++) {
+                    costPromises[i] = sinkTask(bar, parentsIteratorPar.next());
+                }
+                // explicit barrier to make sure all promises have been resolved
+                int temp;
+                if (costPromises.length != 0) {
+                    temp = costPromises[0];
+                }
+                // perform the reduction
+                temp = sinkLocalMin.reduce(Reduction.IntegerMIN);
+
+                // try to update the GLOBAL least cost path so far
+                if (temp < leastCostPathSoFar[0]) {
+                    leastCostPathSoFar[0] = temp;
+                }
+
+                sinkClose.add(bar);
+                dump[1] = sinkRouteCost.get(bar);
+
+                // reinitialize sinkLocalMin because it should be scoped to each inner iteration
+                sinkLocalMin = new Reducible<>(Integer.MAX_VALUE);
+
 
                 //todo - the inner loop branching on PARENTS can be a good candidate for parallelization
 
