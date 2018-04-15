@@ -48,3 +48,5 @@ atlassian-ide-plugin.xml
 ######################################
 .settings
 .metadata
+.project
+.classpath
