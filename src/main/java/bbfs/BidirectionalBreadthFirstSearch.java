@@ -62,6 +62,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         source = source_and_sink[0];
         sink = source_and_sink[1];
 
+        long start_time = System.nanoTime();
+
         if (isParallel){
 
             parallelSearch();
@@ -72,7 +74,13 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         }
 
+        long end_time = System.nanoTime();
+
+        double difference = (end_time - start_time) / 1e6;
+
         System.out.println("The process took: " + loopCounter.get() + " iterations");
+
+        System.out.println("Program finished in: " + difference + " milliseconds");
 
     }
 
