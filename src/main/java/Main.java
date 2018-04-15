@@ -16,8 +16,6 @@ public class Main {
 
     public static void main(String[] args){
 
-        for (String s : args) {System.out.print(s+" ");}
-
         // create Options object
         Options options = new Options();
 
@@ -123,11 +121,6 @@ public class Main {
 
         System.out.println(reader.getName());
         System.out.println(reader.getType());
-        reader.getVertices().forEachRemaining(node -> System.out.println(node.getNodeName()+" : "+node.getTextContent()));
-        reader.getEdges().forEachRemaining(edge ->
-            System.out.println(edge.getNodeName() + " : " + edge.getFirstChild().getNodeName() + " "
-                    + edge.getFirstChild().getTextContent() + " " + edge.getLastChild().getNodeName() + " "
-                    + edge.getLastChild().getTextContent()));
 
         BasicDirectedGraph<Vertex, DirectedEdge<Vertex>> basicDirectedGraph =
                 (BasicDirectedGraph<Vertex, DirectedEdge<Vertex>>) BasicDirectedGraph.doLoad(reader);

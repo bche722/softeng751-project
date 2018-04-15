@@ -55,23 +55,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
     @Override
     public void doTheJob() {
-        /*
-        graph.vertices().forEach(vertex -> {
-            System.out.println(vertex.name() + " : " + vertex.weight());
-            graph.adjacentVerticesIterator(vertex).forEachRemaining(vertex1 -> System.out.println
-                    ("adjacent: "+vertex1.name()));
-            graph.childrenIterator(vertex).forEachRemaining(vertex2 -> System.out.println
-                    ("child node: " + vertex2.name()));
-            graph.parents(vertex).forEach(vertex3 ->System.out.println
-                    ("parent node: " + vertex3.name()));
-            graph.outEdges(vertex).forEach(edge -> System.out.println
-                    ("outgoing edges: "+edge.name()));
-        });
-        graph.sources().forEach(v -> System.out.println("Source:" + v.name()));
-        graph.sinks().forEach(v -> System.out.println("Sink:" + v.name()));
-        graph.edges().forEach(edge -> System.out.println(edge.name() + " : " + edge.weight()));
-        System.out.println("Parallel Mode: " + this.isParallel);
-         */
 
         V[] source_and_sink = (V[]) new Vertex[]{null, null};
         graph.sources().forEach(v -> source_and_sink[0] = v);
@@ -79,19 +62,18 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         source = source_and_sink[0];
         sink = source_and_sink[1];
 
-        //todo - algorithm implementation
         if (isParallel){
 
-            //todo - parallel implementation goes here
             parallelSearch();
-            System.out.println("The process took: " + loopCounter.get() + " iterations");
 
         } else {
 
             sequentialSearch();
-            System.out.println("The process took: " + loopCounter.get() + " iterations");
 
         }
+
+        System.out.println("The process took: " + loopCounter.get() + " iterations");
+
     }
 
     private void sequentialSearch(){
@@ -125,10 +107,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
             if (loopCounter.get()%2 == 0) {
 
-                System.out.println("source turn");
-                sourceFrontier.forEach(v -> System.out.print(v.name() + " " + sourceRouteCost.get(v) + "   "));
-                System.out.println("");
-
                 // source turn
                 if (sourceFrontier.isEmpty()) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
@@ -139,13 +117,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 V foo = sourceFrontier.get(0);
                 sourceFrontier.remove(foo);
 
-                System.out.println("start with " + foo.name());
-
                 graph.childrenIterator(foo).forEachRemaining(child -> {
                     int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
-
-//                    System.out.println("child name: " + child.name());
-//                    sourceRouteCost.keySet().forEach(key -> System.out.println("key name: " + key.name()));
 
                     if (newCost < sourceRouteCost.get(child)) {
                         sourceRouteCost.replace(child, newCost);
@@ -163,13 +136,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 sourceClose.add(foo);
                 dump[0] = sourceRouteCost.get(foo);
 
-                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
-
             } else {
-
-                System.out.println("sink turn");
-                sinkFrontier.forEach(v -> System.out.print(v.name() + " : " + sinkRouteCost.get(v) + "   "));
-                System.out.println("");
 
                 // sink turn
                 if (sinkFrontier.isEmpty()) {
@@ -180,8 +147,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 sinkFrontier.sort(sinkComparator);
                 V bar = sinkFrontier.get(0);
                 sinkFrontier.remove(bar);
-
-                System.out.println("start with " + bar.name());
 
                 graph.parentsIterator(bar).forEachRemaining(parent -> {
                     int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
@@ -201,7 +166,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 sinkClose.add(bar);
                 dump[1] = sinkRouteCost.get(bar);
 
-                System.out.println("what is the least cost path so far? " + leastCostPathSoFar[0]);
             }
 
             // stopping criterion 1 : check collision (keep it as a backup in case something gets screwed up later)
@@ -226,12 +190,9 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             }
             */
 
-            System.out.println("dump0 -> " + dump[0] + " dump1 -> " + dump[1]);
-
             // stopping criterion 2 : using a global least cost path (so far) and compare it with the sum of both heap
             // tops (dump[0] and dump[1]) in every iteration
             if (dump[0] != 0 && dump[1] != 0) {
-                System.out.println("checking criterion now");
                 if (dump[0] + dump[1] >= leastCostPathSoFar[0]) {
                     System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
                             " units");
@@ -247,24 +208,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             // increment the counter
             loopCounter.addAndGet(1);
 
-        }
-    }
-
-    /**
-     * Addition helper takes care of Integer.MAX_VALUE and null.
-     * This method is specialized to calculate path cost for sub paths.
-     * Do not use it for normal additions.
-     * @param myCost - int
-     * @param edgeCost - int
-     * @param yourCost - int
-     * @return int - the sum
-     */
-    private int costAdder(int myCost, int edgeCost, int yourCost){ // todo - use this for newCost in parallel version
-
-        if (myCost == Integer.MAX_VALUE || edgeCost == Integer.MAX_VALUE || yourCost == Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        } else {
-            return myCost + edgeCost + yourCost;
         }
     }
 
@@ -322,10 +265,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
      */
     private int sourceTask(V foo, V child) {
 
-        System.out.println(foo);
-        System.out.println(child);
-        System.out.println(sourceRouteCost.get(foo));
-
         int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
 
         // try to update the child's priority
@@ -381,11 +320,10 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
         CostComparatorForVertices<V, E> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
 
-        // every insertion and removal of element must be synchronized - use the lock for every critical region
         ArrayList<V> sourceFrontier = new ArrayList<>();
         ArrayList<V> sinkFrontier = new ArrayList<>();
 
-        // every insertion and removal of element must be synchronized - use the lock for every critical region
+        // every insertion and removal of element must be synchronized
         HashSet<V> sourceClose = new HashSet<>(); // avoid duplicates induced by concurrent access
         HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
 
@@ -407,16 +345,13 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         while (populatorPromises[0] != null) {}; // busy wait
 
         // start searching - using stopping criterion 2
-        // todo - (?) use @PT to parallelize this loop, **use reduction at the end to find the least cost if possible**
-        // todo - MAYBE NOT parallelize this outer loop, since there is a strong loop dependence in frontiers
-        // todo - Possible to parallelize inner loops since branching adjacent nodes does not interfere each other
         while (!(dump[0] != 0 && dump[1] != 0 && dump[0] + dump[1] >= leastCostPathSoFar[0])) {
 
-            // todo - outer loop has a strong inter-loop dependence, due to frontiers
+            // outer loop has a strong inter-loop dependence, due to frontiers
 
-            // todo - inner loops depends on outer loop iterations, but there is no intra-loop dependence among them
+            // inner loops depends on outer loop iterations, but there is no intra-loop dependence among them
 
-            // todo - parallelizing inner loops can prevent the application suffering from those huge branching factors
+            // parallelizing inner loops can prevent the application suffering from those huge branching factors
 
             if (loopCounter.get()%2 == 0) {
 
@@ -434,6 +369,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 int size = childrenArray.size();
                 @Future
                 int[] costPromises = new int[size];
+                // every usage of Iterator/Iterable must be switched to ParIterator
                 ParIterator<V> childrenIteratorPar = ParIteratorFactory.createParIterator(childrenArray,
                         Runtime.getRuntime().availableProcessors());
                 for (int i = 0; i < size; i++) {
@@ -458,15 +394,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 // reinitialize sourceLocalMin because it should be scoped to each inner iteration
                 sourceLocalMin = new Reducible<>(Integer.MAX_VALUE);
 
-                //todo - the inner loop branching on CHILDREN can be a good candidate for parallelization
-
-                //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
-
-                //todo - use locks for critical regions like Write-After-Read for calculating and updating costs
-
-                //todo - every usage of Iterator/Iterable must be switched to ParIterator
-
-                //todo - use costAdder for newCost in parallel version (polling from the frontier can be out of order)
 
             } else {
 
@@ -484,6 +411,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 int size = parentsArray.size();
                 @Future
                 int[] costPromises = new int[size];
+                // every usage of Iterator/Iterable must be switched to ParIterator
                 ParIterator<V> parentsIteratorPar = ParIteratorFactory.createParIterator(parentsArray, Runtime
                         .getRuntime().availableProcessors());
                 for (int i = 0; i < size; i++) {
@@ -509,26 +437,12 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                 sinkLocalMin = new Reducible<>(Integer.MAX_VALUE);
 
 
-                //todo - the inner loop branching on PARENTS can be a good candidate for parallelization
-
-                //todo - use locks for critical regions i.e. deque, insertion, etc, for queues and sets
-
-                //todo - use locks for critical regions like Write-After-Read for calculating and updating costs
-
-                //todo - every usage of Iterator/Iterable must be switched to ParIterator
-
-                //todo - use costAdder for newCost in parallel version (polling from the frontier can be out of order)
-
             }
 
             // increment the counter
             loopCounter.addAndGet(1);
 
         }
-
-        //todo - **join and reduce**, each thread can (?) potentially hold a distinct version of leastCostPathSoFar[0]
-        //todo - depending on the implementation => one single global copy OR individual copies of leastCostPathSoFar[0]
-        //todo - no need fot a shared leastCostPathSoFar[0] if parallelizing inner loops instead of the outer loop
 
         System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] + " units");
 
