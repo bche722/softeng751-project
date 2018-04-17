@@ -1,12 +1,11 @@
 package utils;
 
-import graph.DirectedEdge;
 import graph.Vertex;
 
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CostComparatorForVertices<V extends Vertex, E extends DirectedEdge<V>> implements Comparator<V> {
+public class CostComparatorForVertices<V extends Vertex> implements Comparator<V> {
 
     private ConcurrentHashMap<V, Integer> routeCost;
 

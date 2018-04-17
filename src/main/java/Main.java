@@ -55,6 +55,7 @@ public class Main {
                 String algo_name = cmd.getOptionValue("a");
 
                 if (algo_name != null) {
+                    System.out.println("thread id : " + Thread.currentThread().getId());
                     boolean isParallel;
                     switch (algo_name){
                         case "bbfs":

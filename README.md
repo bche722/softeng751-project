@@ -1,6 +1,11 @@
 # Softeng751_Project_Group_11
 Project 1:  Parallelisation of graph algorithms in Java
 
+# Group members
+ - Mason Shi - GitHub : tshi206 - UPI : tshi206 - ID : 313368828
+ - Vincent Chen - GitHub : bche722 - UPI : bche722 - ID : ??????????
+ - Joseph Ge - GitHub : taotao - UPI : tge676 - ID : ??????????
+
 # JDK prerequisite
 at least 1.8
 

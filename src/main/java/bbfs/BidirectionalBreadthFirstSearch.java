@@ -1,6 +1,7 @@
 package bbfs;
 
 import apt.annotations.Future;
+import apt.annotations.InitParaTask;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
 import graph.Vertex;
@@ -22,7 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @param <V> extends Vertex
  * @param <E> extends DirectedEdge<Vertex>
  */
-public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends DirectedEdge<V>> extends Algorithm<Vertex, DirectedEdge<Vertex>> {
+public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends DirectedEdge<V>> extends
+        Algorithm<Vertex, DirectedEdge<Vertex>> {
 
     private BasicDirectedGraph<V, E> graph;
 
@@ -78,16 +80,14 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
         double difference = (end_time - start_time) / 1e6;
 
-        System.out.println("The process took: " + loopCounter.get() + " iterations");
-
         System.out.println("Program finished in: " + difference + " milliseconds");
 
     }
 
     private void sequentialSearch(){
 
-        CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
-        CostComparatorForVertices<V, E> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
+        CostComparatorForVertices<V> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
+        CostComparatorForVertices<V> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
 
         ArrayList<V> sourceFrontier = new ArrayList<>();
         ArrayList<V> sinkFrontier = new ArrayList<>();
@@ -253,8 +253,10 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     // below is the parallel version
 
 
-    private Reducible<Integer> sourceLocalMin = new Reducible<>(Integer.MAX_VALUE);
-    private Reducible<Integer> sinkLocalMin = new Reducible<>(Integer.MAX_VALUE);
+    private Reducible<CostNamePair<V>> sourceLocalMin =
+            new Reducible<>(new CostNamePair<>(Integer.MAX_VALUE, null, null, null));
+    private Reducible<CostNamePair<V>> sinkLocalMin =
+            new Reducible<>(new CostNamePair<>(Integer.MAX_VALUE, null, null, null));
 
     private Void populateDataStructures(ArrayList<V> sourceFrontier, ArrayList<V> sinkFrontier, V v){
 
@@ -265,68 +267,49 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
     }
 
-    /**
-     * a sub-task representing the computation to update the child's cost as well as to calculate the local least cost
-     * @param foo - V, the parent node
-     * @param child - V, the child node
-     * @return int - local least cost
-     */
-    private int sourceTask(V foo, V child) {
-
-        int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
-
-        // try to update the child's priority
-        if (newCost < sourceRouteCost.get(child)) {
-            sourceRouteCost.replace(child, newCost);
-            routeMapFromSource.put(child, foo); // frontier -> close
-        }
-
-        // try to update the local least cost path so far
-        int localLeastCost;
-        if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
-            localLeastCost = newCost + sinkRouteCost.get(child) - child.weight();
-            if (localLeastCost < sourceLocalMin.get()) {
-                sourceLocalMin.set(localLeastCost);
-            }
-        } else {
-            localLeastCost = Integer.MAX_VALUE;
-        }
-
-        return localLeastCost; // just in case if manual reduction is needed (i.e., if Reducible bugs out)
-    }
-
-    /**
-     * a sub-task representing the computation to update the child's cost as well as to calculate the local least cost
-     * @param bar - V, the parent node
-     * @param parent - V, the child node
-     * @return int - local least cost
-     */
-    private int sinkTask(V bar, V parent) {
-
-        int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
-        if (newCost < sinkRouteCost.get(parent)) {
-            sinkRouteCost.replace(parent, newCost);
-            routeMapFromSink.put(parent, bar); // frontier -> close
-        }
-
-        // try to update the local least cost path so far
-        int localLeastCost;
-        if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
-            localLeastCost = newCost + sourceRouteCost.get(parent) - parent.weight();
-            if (localLeastCost < sinkLocalMin.get()) {
-                sinkLocalMin.set(localLeastCost);
-            }
-        } else {
-            localLeastCost = Integer.MAX_VALUE;
-        }
-
-        return localLeastCost; // just in case if manual reduction is needed (i.e., if Reducible bugs out)
-    }
-
+    @InitParaTask
     private void parallelSearch(){
 
-        CostComparatorForVertices<V, E> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
-        CostComparatorForVertices<V, E> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
+        // make sure both side will have equal number of tasks to be paired up
+        int numOfProcessors = Runtime.getRuntime().availableProcessors();
+        int maxNumOfSourceTasks = numOfProcessors/2;
+        int maxNumOfSinkTasks = numOfProcessors - maxNumOfSourceTasks;
+
+        int numOfSourceBranches = graph.getChilds(source).size();
+        int numOfSinkBranches = graph.getParents(sink).size();
+
+        int minNumOfTasksFromSource;
+        if (numOfSourceBranches < maxNumOfSourceTasks) {
+            minNumOfTasksFromSource = numOfSourceBranches;
+        } else {
+            minNumOfTasksFromSource = maxNumOfSourceTasks;
+        }
+        int minNumOfTasksFromSink;
+        if (numOfSinkBranches < maxNumOfSinkTasks) {
+            minNumOfTasksFromSink = numOfSinkBranches;
+        } else {
+            minNumOfTasksFromSink = maxNumOfSinkTasks;
+        }
+        int finalNumOfTasksForBothSide;
+        if (minNumOfTasksFromSource < minNumOfTasksFromSink) {
+            finalNumOfTasksForBothSide = minNumOfTasksFromSource;
+        } else {
+            finalNumOfTasksForBothSide = minNumOfTasksFromSink;
+        }
+
+        System.out.println("finalNumOfTasksForBothSide : " + finalNumOfTasksForBothSide);
+
+        // initialize tasks for both side
+        ArrayList<SourceTask<V, E>> sourceTasks = new ArrayList<>();
+        ArrayList<SinkTask<V, E>> sinkTasks = new ArrayList<>();
+        for (int i = 0; i < finalNumOfTasksForBothSide; i++) {
+            sourceTasks.add(new SourceTask<>(graph));
+            sinkTasks.add(new SinkTask<>(graph));
+        }
+
+        // prepare other essential objects
+        CostComparatorForVertices<V> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
+        CostComparatorForVertices<V> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
 
         ArrayList<V> sourceFrontier = new ArrayList<>();
         ArrayList<V> sinkFrontier = new ArrayList<>();
@@ -343,116 +326,295 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
         }
 
-        //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
-        int[] leastCostPathSoFar = {Integer.MAX_VALUE};
 
-        // initialize dumps (heap tops) for source frontier and sink frontier, respectively
-        int[] dump = new int[]{0, 0};
+        // initialize dumps (heap tops) for source frontiers and sink frontiers, respectively
+        ArrayList<AtomicInteger> sourceDumps = new ArrayList<>();
+        ArrayList<AtomicInteger> sinkDumps = new ArrayList<>();
+        for (int i = 0; i < finalNumOfTasksForBothSide; i++) {
+            sourceDumps.add(new AtomicInteger());
+        }
+        for (int i = 0; i < finalNumOfTasksForBothSide; i++) {
+            sinkDumps.add(new AtomicInteger());
+        }
+
+        // initialize maps, only shared by each peer, not by every thread
+        // todo - prepare copies of map, probably don't need these any more?
+        ArrayList<ConcurrentHashMap<V, Integer>> sourceRouteCostMaps = new ArrayList<>();
+        ArrayList<ConcurrentHashMap<V, Integer>> sinkRouteCostMaps = new ArrayList<>();
+        ArrayList<ConcurrentHashMap<V, V>> routeMapsFromSource = new ArrayList<>();
+        ArrayList<ConcurrentHashMap<V, V>> routeMapsFromSink = new ArrayList<>();
+
 
         // explicit barrier for populatorPromises, make sure every data structure is ready
         while (populatorPromises[0] != null) {}; // busy wait
 
-        // start searching - using stopping criterion 2
-        while (!(dump[0] != 0 && dump[1] != 0 && dump[0] + dump[1] >= leastCostPathSoFar[0])) {
+        // initialized future group, raw typed, cast the element before using it if needed
+        @Future
+        CostNamePair[] leastCostPathPromises = new CostNamePair[finalNumOfTasksForBothSide * 2];
 
-            // outer loop has a strong inter-loop dependence, due to frontiers
+        // initialize a local least cost path for pre-dispatching-stages
+        int initialLeastCostPath = Integer.MAX_VALUE;
 
-            // inner loops depends on outer loop iterations, but there is no intra-loop dependence among them
+        // pre-dispatching-stage, source side
+        sourceFrontier.sort(sourceComparator);
+        V foo = sourceFrontier.get(0);
+        sourceFrontier.remove(foo);
 
-            // parallelizing inner loops can prevent the application suffering from those huge branching factors
+        sourceClose.add(foo);
+        int sourceDump = sourceRouteCost.get(foo);
+        sourceDumps.forEach(dump -> dump.set(sourceDump));
 
-            if (loopCounter.get()%2 == 0) {
+        for (V child : graph.children(foo)) {
+            int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
 
-                // source turn
-                if (sourceFrontier.isEmpty()) {
-                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
-                            " units");
-                    break;
+            if (newCost < sourceRouteCost.get(child)) {
+                sourceRouteCost.replace(child, newCost);
+                routeMapFromSource.put(child, foo); // frontier -> close
+            }
+
+            // try to update the global least cost path so far
+            if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
+                int temp = newCost + sinkRouteCost.get(child) - child.weight();
+                if (temp < initialLeastCostPath) {
+                    initialLeastCostPath = temp;
                 }
-                sourceFrontier.sort(sourceComparator);
-                V foo = sourceFrontier.get(0);
-                sourceFrontier.remove(foo);
+            }
+        }
 
-                ArrayList<V> childrenArray = graph.getChilds(foo);
-                int size = childrenArray.size();
-                @Future
-                int[] costPromises = new int[size];
-                // every usage of Iterator/Iterable must be switched to ParIterator
-                ParIterator<V> childrenIteratorPar = ParIteratorFactory.createParIterator(childrenArray,
-                        Runtime.getRuntime().availableProcessors());
-                for (int i = 0; i < size; i++) {
-                    costPromises[i] = sourceTask(foo, childrenIteratorPar.next());
+        // pre-dispatching-stage, sink side
+        sinkFrontier.sort(sinkComparator);
+        V bar = sinkFrontier.get(0);
+        sinkFrontier.remove(bar);
+
+        sinkClose.add(bar);
+        int sinkDump = sinkRouteCost.get(bar);
+        sinkDumps.forEach(dump -> dump.set(sinkDump));
+
+        for (V parent : graph.parents(bar)) {
+            int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
+            if (newCost < sinkRouteCost.get(parent)) {
+                sinkRouteCost.replace(parent, newCost);
+                routeMapFromSink.put(parent, bar); // frontier -> close
+            }
+
+            // try to update the global least cost path so far
+            if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
+                int temp = newCost + sourceRouteCost.get(parent) - parent.weight();
+                if (temp < initialLeastCostPath) {
+                    initialLeastCostPath = temp;
                 }
-                // explicit barrier to make sure all promises have been resolved
-                int temp;
-                if (costPromises.length != 0) {
-                    temp = costPromises[0];
+            }
+        }
+        // pre-dispatching-stages finished
+
+
+        // start dispatching tasks (cutting both frontiers and supplying tasks with all required data structure)
+        int cuttingIntervalForSourceSide = numOfSourceBranches/finalNumOfTasksForBothSide;
+        int cuttingIntervalForSinkSide = numOfSinkBranches/finalNumOfTasksForBothSide;
+
+        // last check on initialLeastCostPath, for graphs with single nodes or there is a direct edge between source
+        // and sink
+        if (initialLeastCostPath < Integer.MAX_VALUE) {
+            System.out.println("shortest path from source to sink costs: " + initialLeastCostPath +
+                    " units");
+            return;
+        }
+
+        // sort both frontier for final setup
+        sourceFrontier.sort(sourceComparator);
+        sinkFrontier.sort(sinkComparator);
+
+        // record how many tasks from source have been set up
+        int numOfReadyTasksFromSource = 0;
+
+        // have a temporary placeholder for partitioned source frontier
+        ArrayDeque<V> sourceFrontierPlaceholder = new ArrayDeque<>();
+
+        // complete the setup of source tasks
+        for (int i = 0; i < sourceFrontier.size(); i++) {
+            if (numOfReadyTasksFromSource < finalNumOfTasksForBothSide - 1) {
+                if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSourceSide == 0) {
+
+                    /*
+                    // get maps and dumps, and a reference to the Reducible
+                    // following are SHARED data structures, passed by setter, shared with the sink peer, make sure
+                    // maps are copied
+                    private ConcurrentHashMap<V, V> routeMapFromSource;
+                    private ConcurrentHashMap<V, Integer> sourceRouteCost;
+                    private AtomicInteger sourceDump;
+
+                    // following are private data structures, passed by setter, make sure they are copied
+                    private ArrayList<V> sourceFrontier;
+                    private HashSet<V> sourceClose;
+
+                    // following are SHARED data structures for source side, passed by setter, make sure they are passed
+                    // by reference
+                    private Reducible<CostNamePair<V>> sourceLocalMin;
+                     */
+
+                    SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
+                    SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
+
+                    task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
+                    task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
+                    task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
+
+                    task.setPeer(peer);
+
+                    task.setSourceFrontier(new ArrayList<>(sourceFrontier));
+                    task.setSourceClose(new HashSet<>(sourceClose));
+
+                    task.setSourceLocalMin(sourceLocalMin);
+
+
+                    numOfReadyTasksFromSource++;
+                    while (!sourceFrontierPlaceholder.isEmpty()) {
+                        V temp = sourceFrontierPlaceholder.poll();
+                        sourceFrontier.remove(temp);
+                    }
                 }
-                // perform the reduction
-                temp = sourceLocalMin.reduce(Reduction.IntegerMIN);
 
-                // try to update the GLOBAL least cost path so far
-                if (temp < leastCostPathSoFar[0]) {
-                    leastCostPathSoFar[0] = temp;
-                }
-
-                sourceClose.add(foo);
-                dump[0] = sourceRouteCost.get(foo);
-
-                // reinitialize sourceLocalMin because it should be scoped to each inner iteration
-                sourceLocalMin = new Reducible<>(Integer.MAX_VALUE);
-
+                sourceFrontierPlaceholder.push(sourceFrontier.get(i));
+                loopCounter.incrementAndGet();
 
             } else {
 
-                // sink turn
-                if (sinkFrontier.isEmpty()) {
-                    System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] +
-                            " units");
-                    break;
+                // setup the last task
+                SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
+                SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
+
+                task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
+                task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
+                task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
+
+                task.setPeer(peer);
+
+                task.setSourceFrontier(new ArrayList<>(sourceFrontier));
+                task.setSourceClose(new HashSet<>(sourceClose));
+
+                task.setSourceLocalMin(sourceLocalMin);
+
+                break;
+            }
+        }
+
+        // use the loopCounter to detect the intervals, reset for sink side
+        loopCounter.set(0);
+
+        // record how many tasks from sink have been set up
+        int numOfReadyTasksFromSink = 0;
+
+        // have a temporary placeholder for partitioned sink frontier
+        ArrayDeque<V> sinkFrontierPlaceholder = new ArrayDeque<>();
+
+        // complete the setup of sink tasks
+        for (int i = 0; i < sinkFrontier.size(); i++) {
+            if (numOfReadyTasksFromSink < finalNumOfTasksForBothSide - 1) {
+                if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSinkSide == 0) {
+
+                    /*
+                    // get maps and dumps, and a reference to the Reducible
+                    // following are SHARED data structures, passed by setter, shared with the source peer, make sure
+                    // maps are copied
+                    private ConcurrentHashMap<V, V> routeMapFromSink;
+                    private ConcurrentHashMap<V, Integer> sinkRouteCost;
+                    private AtomicInteger sinkDump;
+
+                    // following are private data structures, passed by setter, make sure they are copied
+                    private ArrayList<V> sinkFrontier;
+                    private HashSet<V> sinkClose;
+
+                    // following are SHARED data structures for sink side, passed by setter, make sure they are passed
+                    // by reference
+                    private Reducible<CostNamePair<V>> sinkLocalMin;
+                     */
+
+                    SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
+                    SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
+
+                    task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
+                    task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
+                    //System.out.println(sinkDumps.get(numOfReadyTasksFromSink)); // todo - remove logger
+                    task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
+
+                    task.setPeer(peer);
+
+                    task.setSinkFrontier(new ArrayList<>(sinkFrontier));
+                    task.setSinkClose(new HashSet<>(sinkClose));
+
+                    task.setSinkLocalMin(sinkLocalMin);
+
+
+                    numOfReadyTasksFromSink++;
+                    while (!sinkFrontierPlaceholder.isEmpty()) {
+                        V temp = sinkFrontierPlaceholder.poll();
+                        sinkFrontier.remove(temp);
+                    }
                 }
-                sinkFrontier.sort(sinkComparator);
-                V bar = sinkFrontier.get(0);
-                sinkFrontier.remove(bar);
 
-                ArrayList<V> parentsArray = graph.getParents(bar);
-                int size = parentsArray.size();
-                @Future
-                int[] costPromises = new int[size];
-                // every usage of Iterator/Iterable must be switched to ParIterator
-                ParIterator<V> parentsIteratorPar = ParIteratorFactory.createParIterator(parentsArray, Runtime
-                        .getRuntime().availableProcessors());
-                for (int i = 0; i < size; i++) {
-                    costPromises[i] = sinkTask(bar, parentsIteratorPar.next());
-                }
-                // explicit barrier to make sure all promises have been resolved
-                int temp;
-                if (costPromises.length != 0) {
-                    temp = costPromises[0];
-                }
-                // perform the reduction
-                temp = sinkLocalMin.reduce(Reduction.IntegerMIN);
+                sinkFrontierPlaceholder.push(sinkFrontier.get(i));
+                loopCounter.incrementAndGet();
 
-                // try to update the GLOBAL least cost path so far
-                if (temp < leastCostPathSoFar[0]) {
-                    leastCostPathSoFar[0] = temp;
-                }
+            } else {
 
-                sinkClose.add(bar);
-                dump[1] = sinkRouteCost.get(bar);
+                // setup the last task
+                SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
+                SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
 
-                // reinitialize sinkLocalMin because it should be scoped to each inner iteration
-                sinkLocalMin = new Reducible<>(Integer.MAX_VALUE);
+                task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
+                task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
+                //System.out.println(sinkDumps.get(numOfReadyTasksFromSink)); // todo - remove logger
+                task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
 
+                task.setPeer(peer);
+
+                task.setSinkFrontier(new ArrayList<>(sinkFrontier));
+                task.setSinkClose(new HashSet<>(sinkClose));
+
+                task.setSinkLocalMin(sinkLocalMin);
+
+                break;
+
+            }
+        }
+
+//        sourceTasks.forEach(veSourceTask -> System.out.println("peer dump: " + veSourceTask.getPeer()));
+//        sinkTasks.forEach(veSinkTask -> System.out.println("peer dump: " + veSinkTask.getPeer()));
+
+        // finalize dispatching - use leastCostPathPromises array as future group
+        for (int i = 0; i < leastCostPathPromises.length; i++) {
+
+            if (i < finalNumOfTasksForBothSide) {
+
+                // dispatching source tasks
+                leastCostPathPromises[i] = sourceTasks.get(i).execute();
+                System.out.println("dispatching : " + i);
+
+            } else {
+
+                // dispatching sink tasks
+                leastCostPathPromises[i] = sinkTasks.get(i - sinkTasks.size()).execute();
+                System.out.println("dispatching : " + i);
 
             }
 
-            // increment the counter
-            loopCounter.addAndGet(1);
-
         }
 
-        System.out.println("shortest path from source to sink costs: " + leastCostPathSoFar[0] + " units");
+        // explicit barrier, busy wait
+        while (! (leastCostPathPromises[0] != null)) {};
+
+        CostNamePair<V> sourceSideResult = sourceLocalMin.reduce(new Reducer<>());
+        CostNamePair<V> sinkSideResult = sinkLocalMin.reduce(new Reducer<>());
+
+        if (sourceSideResult.getCost() < sinkSideResult.getCost()) {
+
+            System.out.println("shortest path from source to sink costs: " + sourceSideResult.getCost() + " units");
+
+        } else {
+
+            System.out.println("shortest path from source to sink costs: " + sinkSideResult.getCost() + " units");
+
+        }
 
     }
 }
