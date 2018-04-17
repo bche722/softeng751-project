@@ -13,7 +13,10 @@ import pu.pi.ParIteratorFactory;
 import utils.CostComparatorForVertices;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -581,27 +584,45 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 //        sourceTasks.forEach(veSourceTask -> System.out.println("peer dump: " + veSourceTask.getPeer()));
 //        sinkTasks.forEach(veSinkTask -> System.out.println("peer dump: " + veSinkTask.getPeer()));
 
+        // somehow the @PT transpiler does not work
+        ExecutorService pool = Executors.newFixedThreadPool(leastCostPathPromises.length);
+
+        List<Callable<Object>> calls = new ArrayList<>();
+
+        // return type of executor.invokeAll : List<Future<Object>> futures = executor.invokeAll(calls);
+
         // finalize dispatching - use leastCostPathPromises array as future group
         for (int i = 0; i < leastCostPathPromises.length; i++) {
 
             if (i < finalNumOfTasksForBothSide) {
 
                 // dispatching source tasks
-                leastCostPathPromises[i] = sourceTasks.get(i).execute();
+                //leastCostPathPromises[i] = sourceTasks.get(i).execute();
+                calls.add(Executors.callable(sourceTasks.get(i)));
                 System.out.println("dispatching : " + i);
 
             } else {
 
                 // dispatching sink tasks
-                leastCostPathPromises[i] = sinkTasks.get(i - sinkTasks.size()).execute();
+                //leastCostPathPromises[i] = sinkTasks.get(i - sinkTasks.size()).execute();
+                calls.add(Executors.callable(sinkTasks.get(i - sinkTasks.size())));
                 System.out.println("dispatching : " + i);
 
             }
 
         }
 
-        // explicit barrier, busy wait
-        while (! (leastCostPathPromises[0] != null)) {};
+        // explicit barrier for @PT future group, busy wait
+        //while (! (leastCostPathPromises[0] != null)) {};
+
+        // use executor service for now...
+        try {
+            pool.invokeAll(calls);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            pool.shutdown();
+        }
 
         CostNamePair<V> sourceSideResult = sourceLocalMin.reduce(new Reducer<>());
         CostNamePair<V> sinkSideResult = sinkLocalMin.reduce(new Reducer<>());

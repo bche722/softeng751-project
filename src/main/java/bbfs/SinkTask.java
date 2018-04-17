@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SinkTask<V extends Vertex, E extends DirectedEdge<V>> implements Task {
+public class SinkTask<V extends Vertex, E extends DirectedEdge<V>> implements Task, Runnable {
 
     private BasicDirectedGraph<V, E> graph;
 
@@ -121,5 +121,10 @@ public class SinkTask<V extends Vertex, E extends DirectedEdge<V>> implements Ta
         }
 
         return sinkLocalMin.get(); // just in case if manual reduction is needed (i.e., if Reducible bugs out)
+    }
+
+    @Override
+    public void run() {
+        execute();
     }
 }
