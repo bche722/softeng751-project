@@ -1,4 +1,5 @@
 import bbfs.BidirectionalBreadthFirstSearch;
+import bbfs.BidirectionalBreadthFirstSearchOld;
 import fw.FloydWarshall;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
@@ -61,6 +62,7 @@ public class Main {
                         case "bbfs":
                             isParallel = cmd.hasOption("p");
                             new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearch<>(fFlagHandler(cmd), isParallel))).start();
+                            //new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearchOld<>(fFlagHandler(cmd), isParallel))).start();
                             break;
                         case "iddfs":
                             isParallel = cmd.hasOption("p");

@@ -13,7 +13,10 @@ import pu.pi.ParIteratorFactory;
 import utils.CostComparatorForVertices;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -380,19 +383,31 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
 
                 ArrayList<V> childrenArray = graph.getChilds(foo);
                 int size = childrenArray.size();
-                @Future
-                int[] costPromises = new int[size];
+//                @Future
+//                int[] costPromises = new int[size];
                 // every usage of Iterator/Iterable must be switched to ParIterator
                 ParIterator<V> childrenIteratorPar = ParIteratorFactory.createParIterator(childrenArray,
                         Runtime.getRuntime().availableProcessors());
+                ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                ArrayList<Callable<Object>> callables = new ArrayList<>();
                 for (int i = 0; i < size; i++) {
-                    costPromises[i] = sourceTask(foo, childrenIteratorPar.next());
+//                    costPromises[i] = sourceTask(foo, childrenIteratorPar.next());
+                    callables.add(Executors.callable(() -> {
+                        sourceTask(foo, childrenIteratorPar.next());
+                    }));
                 }
                 // explicit barrier to make sure all promises have been resolved
-                int temp;
-                if (costPromises.length != 0) {
-                    temp = costPromises[0];
+                try {
+                    pool.invokeAll(callables);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    pool.shutdown();
                 }
+                int temp;
+//                if (costPromises.length != 0) {
+//                    temp = costPromises[0];
+//                }
                 // perform the reduction
                 temp = sourceLocalMin.reduce(Reduction.IntegerMIN);
 
@@ -422,19 +437,31 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
 
                 ArrayList<V> parentsArray = graph.getParents(bar);
                 int size = parentsArray.size();
-                @Future
-                int[] costPromises = new int[size];
+//                @Future
+//                int[] costPromises = new int[size];
                 // every usage of Iterator/Iterable must be switched to ParIterator
                 ParIterator<V> parentsIteratorPar = ParIteratorFactory.createParIterator(parentsArray, Runtime
                         .getRuntime().availableProcessors());
+                ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                ArrayList<Callable<Object>> callables = new ArrayList<>();
                 for (int i = 0; i < size; i++) {
-                    costPromises[i] = sinkTask(bar, parentsIteratorPar.next());
+//                    costPromises[i] = sinkTask(bar, parentsIteratorPar.next());
+                    callables.add(Executors.callable(() -> {
+                        sinkTask(bar, parentsIteratorPar.next());
+                    }));
                 }
                 // explicit barrier to make sure all promises have been resolved
-                int temp;
-                if (costPromises.length != 0) {
-                    temp = costPromises[0];
+                try {
+                    pool.invokeAll(callables);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    pool.shutdown();
                 }
+                int temp;
+//                if (costPromises.length != 0) {
+//                    temp = costPromises[0];
+//                }
                 // perform the reduction
                 temp = sinkLocalMin.reduce(Reduction.IntegerMIN);
 
