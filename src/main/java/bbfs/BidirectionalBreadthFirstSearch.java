@@ -101,6 +101,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         HashSet<V> sinkClose = new HashSet<>();
 
         // preparation
+        long start_time = System.nanoTime();
         graph.vertices().forEach(v -> {
 
             prepareMaps(v);
@@ -108,6 +109,11 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             sinkFrontier.add(v);
 
         });
+        long end_time = System.nanoTime();
+
+        double difference = (end_time - start_time) / 1e6;
+
+        System.out.println("Data preparation finished in: " + difference + " milliseconds");
 
         //System.out.println("is integer max equals? " + (Integer.MAX_VALUE == Integer.MAX_VALUE));
         int[] leastCostPathSoFar = {Integer.MAX_VALUE};
@@ -327,12 +333,24 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         // preparation
 //        @Future
 //        Void[] populatorPromises = new Void[graph.verticesSet().size()];
-        Iterator<V> vertexIterator = graph.vertices().iterator();
-        for (int i = 0; i < graph.verticesSet().size(); i++) {
-//            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
-            populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
-        }
+        long start_time = System.nanoTime();
+//        Iterator<V> vertexIterator = graph.vertices().iterator();
+//        for (int i = 0; i < graph.verticesSet().size(); i++) {  // so SLOW!!!!!!!!!!!!!!!!!!!!!!!!!!!
+////            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
+//            populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
+//        }
+        graph.vertices().forEach(v -> {
 
+            prepareMaps(v);
+            sourceFrontier.add(v);
+            sinkFrontier.add(v);
+
+        });
+        long end_time = System.nanoTime();
+
+        double difference = (end_time - start_time) / 1e6;
+
+        System.out.println("Data preparation finished in: " + difference + " milliseconds");
 
         // initialize dumps (heap tops) for source frontiers and sink frontiers, respectively
         ArrayList<AtomicInteger> sourceDumps = new ArrayList<>();
