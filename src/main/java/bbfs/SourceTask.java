@@ -9,6 +9,7 @@ import utils.CostComparatorForVertices;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SourceTask<V extends Vertex, E extends DirectedEdge<V>> implements Task, Runnable {
@@ -57,6 +58,8 @@ public class SourceTask<V extends Vertex, E extends DirectedEdge<V>> implements 
         return sourceDump;
     }
 
+    AtomicBoolean stopFlag = new AtomicBoolean();
+
     void setRouteMapFromSource(ConcurrentHashMap<V, V> routeMapFromSource) {
         this.routeMapFromSource = routeMapFromSource;
     }
@@ -92,8 +95,12 @@ public class SourceTask<V extends Vertex, E extends DirectedEdge<V>> implements 
         //System.out.println(peer.getSinkDump().get());
         //System.out.println(sourceLocalMin);
 
-        while (!(sourceDump.get() != 0 && peer.getSinkDump().get() != 0 & sourceDump.get() + peer.getSinkDump()
-                .get() >= sourceLocalMin.get().getCost())) {
+        int numOfNodes = graph.verticesSet().size();
+        int loopCounter = 0;
+
+//        while (!(sourceDump.get() != 0 && peer.getSinkDump().get() != 0 & sourceDump.get() + peer.getSinkDump()
+//                .get() >= sourceLocalMin.get().getCost())) {                 && loopCounter < numOfNodes/2
+        while (!stopFlag.get()) {
 
             sourceFrontier.sort(sourceComparator);
             V foo = sourceFrontier.get(0);
@@ -102,26 +109,57 @@ public class SourceTask<V extends Vertex, E extends DirectedEdge<V>> implements 
             sourceClose.add(foo);
             sourceDump.set(sourceRouteCost.get(foo));
 
-            graph.getChildsIterator(foo).forEachRemaining(child -> {
+            int dump0 = sourceDump.get();
+            int dump1 = peer.getSinkDump().get();
+
+//            System.out.println("Thread " + Thread.currentThread().getId() + " source dump : " + dump0 + " sink dump :" +
+//                    " " + dump1);
+
+//            graph.getChildsIterator(foo).forEachRemaining(child ->
+            for (V child : graph.children(foo)) {
                 int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
                 if (newCost < sourceRouteCost.get(child)) {
                     sourceRouteCost.replace(child, newCost);
                     routeMapFromSource.put(child, foo); // frontier -> close
                 }
-            });
 
-            sourceClose.forEach(visited -> {
+                // try to update the local least cost path so far
                 // try to update the global least cost path so far
-                int sinkRouteCostForThisVisitedNode = peer.getSinkRouteCost().get(visited);
+                int sinkRouteCostForThisVisitedNode = peer.getSinkRouteCost().get(child);
                 if (sinkRouteCostForThisVisitedNode != Integer.MAX_VALUE) {
-                    int temp = sourceRouteCost.get(visited) + sinkRouteCostForThisVisitedNode - visited.weight();
+                    int temp = sourceRouteCost.get(child) + sinkRouteCostForThisVisitedNode - child.weight();
                     if (temp < sourceLocalMin.get().getCost()) {
-                        sourceLocalMin.set(new CostNamePair<>(temp, visited, routeMapFromSource, peer.getRouteMapFromSink()));
+                        sourceLocalMin.set(new CostNamePair<>(temp, child, routeMapFromSource, peer.getRouteMapFromSink()));
                     }
                 }
-            });
+
+                if (dump0 != 0 && dump1 != 0 & dump0 + dump1 >= sourceLocalMin.get().getCost()) {
+                    System.out.println("Source thread " + Thread.currentThread().getId() + " found a solution");
+                    peer.stopFlag.set(true);
+                    System.out.println("Thread " + Thread.currentThread().getId() + " took : " + loopCounter + " iterations");
+
+                    return sourceLocalMin.get(); // just in case if manual reduction is needed (i.e., if Reducible bugs out)
+
+                }
+
+            }
+
+            loopCounter++;
+
+//            sourceClose.forEach(visited -> {
+//                // try to update the global least cost path so far
+//                int sinkRouteCostForThisVisitedNode = peer.getSinkRouteCost().get(visited);
+//                if (sinkRouteCostForThisVisitedNode != Integer.MAX_VALUE) {
+//                    int temp = sourceRouteCost.get(visited) + sinkRouteCostForThisVisitedNode - visited.weight();
+//                    if (temp < sourceLocalMin.get().getCost()) {
+//                        sourceLocalMin.set(new CostNamePair<>(temp, visited, routeMapFromSource, peer.getRouteMapFromSink()));
+//                    }
+//                }
+//            });
 
         }
+
+        System.out.println("Thread " + Thread.currentThread().getId() + " took : " + loopCounter + " iterations");
 
         return sourceLocalMin.get(); // just in case if manual reduction is needed (i.e., if Reducible bugs out)
     }

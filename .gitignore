@@ -51,3 +51,8 @@ atlassian-ide-plugin.xml
 ######################################
 .settings
 .metadata
+
+# graphs, too large to upload
+######################################
+graph1984--bFactor-10.xml
+graph2183--bFactor-10.xml

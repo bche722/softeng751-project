@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -52,7 +53,6 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
     private V sink;
 
 
-
     public BidirectionalBreadthFirstSearch(BasicDirectedGraph<V, E> graph, boolean isParallel) {
         this.graph = graph;
         this.isParallel = isParallel;
@@ -76,6 +76,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         } else {
 
             sequentialSearch();
+
+            System.out.println("Process took : " + loopCounter.get() + " iterations");
 
         }
 
@@ -299,6 +301,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         } else {
             finalNumOfTasksForBothSide = minNumOfTasksFromSink;
         }
+        finalNumOfTasksForBothSide = 1; // todo - ensure a strict two-cores mode for testing purpose
 
         System.out.println("finalNumOfTasksForBothSide : " + finalNumOfTasksForBothSide);
 
@@ -322,11 +325,12 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
 
         // preparation
-        @Future
-        Void[] populatorPromises = new Void[graph.verticesSet().size()];
+//        @Future
+//        Void[] populatorPromises = new Void[graph.verticesSet().size()];
         Iterator<V> vertexIterator = graph.vertices().iterator();
         for (int i = 0; i < graph.verticesSet().size(); i++) {
-            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
+//            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
+            populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
         }
 
 
@@ -340,103 +344,137 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             sinkDumps.add(new AtomicInteger());
         }
 
-        // initialize maps, only shared by each peer, not by every thread
-        // todo - prepare copies of map, probably don't need these any more?
-        ArrayList<ConcurrentHashMap<V, Integer>> sourceRouteCostMaps = new ArrayList<>();
-        ArrayList<ConcurrentHashMap<V, Integer>> sinkRouteCostMaps = new ArrayList<>();
-        ArrayList<ConcurrentHashMap<V, V>> routeMapsFromSource = new ArrayList<>();
-        ArrayList<ConcurrentHashMap<V, V>> routeMapsFromSink = new ArrayList<>();
+        // experiment : what if all threads share the same dumps? - lose optimality and slower
+//        MutableInt dump0 = new MutableInt(sourceDumps.get(0));
+//        MutableInt dump1 = new MutableInt(sinkDumps.get(0));
 
+        // strict two cores mode
+        if (finalNumOfTasksForBothSide == 1) {
 
-        // explicit barrier for populatorPromises, make sure every data structure is ready
-        while (populatorPromises[0] != null) {}; // busy wait
+            System.out.println("strict two threads mode");
 
-        // initialized future group, raw typed, cast the element before using it if needed
-        @Future
-        CostNamePair[] leastCostPathPromises = new CostNamePair[finalNumOfTasksForBothSide * 2];
+            // sort both frontier for final setup
+            sourceFrontier.sort(sourceComparator);
+            sinkFrontier.sort(sinkComparator);
 
-        // initialize a local least cost path for pre-dispatching-stages
-        int initialLeastCostPath = Integer.MAX_VALUE;
+            // prepare source task
+            SourceTask<V, E> task = sourceTasks.get(0);
+            SinkTask<V, E> peer = sinkTasks.get(0);
 
-        // pre-dispatching-stage, source side
-        sourceFrontier.sort(sourceComparator);
-        V foo = sourceFrontier.get(0);
-        sourceFrontier.remove(foo);
+            task.setRouteMapFromSource(routeMapFromSource);
+            task.setSourceRouteCost(sourceRouteCost);
+            task.setSourceDump(new MutableInt(sourceDumps.get(0))); //dump0
+            //task.setSourceDump(dump0);
 
-        sourceClose.add(foo);
-        int sourceDump = sourceRouteCost.get(foo);
-        sourceDumps.forEach(dump -> dump.set(sourceDump));
+            task.setPeer(peer);
 
-        for (V child : graph.children(foo)) {
-            int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
+            task.setSourceFrontier(new ArrayList<>(sourceFrontier));
+            task.setSourceClose(new HashSet<>(sourceClose));
 
-            if (newCost < sourceRouteCost.get(child)) {
-                sourceRouteCost.replace(child, newCost);
-                routeMapFromSource.put(child, foo); // frontier -> close
-            }
+            task.setSourceLocalMin(sourceLocalMin);
 
-            // try to update the global least cost path so far
-            if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
-                int temp = newCost + sinkRouteCost.get(child) - child.weight();
-                if (temp < initialLeastCostPath) {
-                    initialLeastCostPath = temp;
+            // prepare sink task
+            SinkTask<V, E> task1 = sinkTasks.get(0);
+            SourceTask<V, E> peer1 = sourceTasks.get(0);
+
+            task1.setRouteMapFromSink(routeMapFromSink);
+            task1.setSinkRouteCost(sinkRouteCost);
+            task1.setSinkDump(new MutableInt(sinkDumps.get(0))); //dump1
+            //task1.setSinkDump(dump1);
+
+            task1.setPeer(peer1);
+
+            task1.setSinkFrontier(new ArrayList<>(sinkFrontier));
+            task1.setSinkClose(new HashSet<>(sinkClose));
+
+            task1.setSinkLocalMin(sinkLocalMin);
+
+        } else {
+
+            System.out.println("normal multi threads mode");
+
+            // initialize a local least cost path for pre-dispatching-stages
+            int initialLeastCostPath = Integer.MAX_VALUE;
+
+            // pre-dispatching-stage, source side
+            sourceFrontier.sort(sourceComparator);
+            V foo = sourceFrontier.get(0);
+            sourceFrontier.remove(foo);
+
+            sourceClose.add(foo);
+            int sourceDump = sourceRouteCost.get(foo);
+            sourceDumps.forEach(dump -> dump.set(sourceDump));
+
+            for (V child : graph.children(foo)) {
+                int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
+
+                if (newCost < sourceRouteCost.get(child)) {
+                    sourceRouteCost.replace(child, newCost);
+                    routeMapFromSource.put(child, foo); // frontier -> close
+                }
+
+                // try to update the global least cost path so far
+                if (sinkRouteCost.get(child) != Integer.MAX_VALUE) {
+                    int temp = newCost + sinkRouteCost.get(child) - child.weight();
+                    if (temp < initialLeastCostPath) {
+                        initialLeastCostPath = temp;
+                    }
                 }
             }
-        }
 
-        // pre-dispatching-stage, sink side
-        sinkFrontier.sort(sinkComparator);
-        V bar = sinkFrontier.get(0);
-        sinkFrontier.remove(bar);
+            // pre-dispatching-stage, sink side
+            sinkFrontier.sort(sinkComparator);
+            V bar = sinkFrontier.get(0);
+            sinkFrontier.remove(bar);
 
-        sinkClose.add(bar);
-        int sinkDump = sinkRouteCost.get(bar);
-        sinkDumps.forEach(dump -> dump.set(sinkDump));
+            sinkClose.add(bar);
+            int sinkDump = sinkRouteCost.get(bar);
+            sinkDumps.forEach(dump -> dump.set(sinkDump));
 
-        for (V parent : graph.parents(bar)) {
-            int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
-            if (newCost < sinkRouteCost.get(parent)) {
-                sinkRouteCost.replace(parent, newCost);
-                routeMapFromSink.put(parent, bar); // frontier -> close
-            }
+            for (V parent : graph.parents(bar)) {
+                int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
+                if (newCost < sinkRouteCost.get(parent)) {
+                    sinkRouteCost.replace(parent, newCost);
+                    routeMapFromSink.put(parent, bar); // frontier -> close
+                }
 
-            // try to update the global least cost path so far
-            if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
-                int temp = newCost + sourceRouteCost.get(parent) - parent.weight();
-                if (temp < initialLeastCostPath) {
-                    initialLeastCostPath = temp;
+                // try to update the global least cost path so far
+                if (sourceRouteCost.get(parent) != Integer.MAX_VALUE) {
+                    int temp = newCost + sourceRouteCost.get(parent) - parent.weight();
+                    if (temp < initialLeastCostPath) {
+                        initialLeastCostPath = temp;
+                    }
                 }
             }
-        }
-        // pre-dispatching-stages finished
+            // pre-dispatching-stages finished
 
 
-        // start dispatching tasks (cutting both frontiers and supplying tasks with all required data structure)
-        int cuttingIntervalForSourceSide = numOfSourceBranches/finalNumOfTasksForBothSide;
-        int cuttingIntervalForSinkSide = numOfSinkBranches/finalNumOfTasksForBothSide;
+            // start dispatching tasks (cutting both frontiers and supplying tasks with all required data structure)
+            int cuttingIntervalForSourceSide = numOfSourceBranches/finalNumOfTasksForBothSide;
+            int cuttingIntervalForSinkSide = numOfSinkBranches/finalNumOfTasksForBothSide;
 
-        // last check on initialLeastCostPath, for graphs with single nodes or there is a direct edge between source
-        // and sink
-        if (initialLeastCostPath < Integer.MAX_VALUE) {
-            System.out.println("shortest path from source to sink costs: " + initialLeastCostPath +
-                    " units");
-            return;
-        }
+            // last check on initialLeastCostPath, for graphs with single nodes or there is a direct edge between source
+            // and sink
+            if (initialLeastCostPath < Integer.MAX_VALUE) {
+                System.out.println("shortest path from source to sink costs: " + initialLeastCostPath +
+                        " units");
+                return;
+            }
 
-        // sort both frontier for final setup
-        sourceFrontier.sort(sourceComparator);
-        sinkFrontier.sort(sinkComparator);
+            // sort both frontier for final setup
+            sourceFrontier.sort(sourceComparator);
+            sinkFrontier.sort(sinkComparator);
 
-        // record how many tasks from source have been set up
-        int numOfReadyTasksFromSource = 0;
+            // record how many tasks from source have been set up
+            int numOfReadyTasksFromSource = 0;
 
-        // have a temporary placeholder for partitioned source frontier
-        ArrayDeque<V> sourceFrontierPlaceholder = new ArrayDeque<>();
+            // have a temporary placeholder for partitioned source frontier
+            ArrayDeque<V> sourceFrontierPlaceholder = new ArrayDeque<>();
 
-        // complete the setup of source tasks
-        for (int i = 0; i < sourceFrontier.size(); i++) {
-            if (numOfReadyTasksFromSource < finalNumOfTasksForBothSide - 1) {
-                if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSourceSide == 0) {
+            // complete the setup of source tasks
+            for (int i = 0; i < sourceFrontier.size(); i++) {
+                if (numOfReadyTasksFromSource < finalNumOfTasksForBothSide - 1) {
+                    if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSourceSide == 0) {
 
                     /*
                     // get maps and dumps, and a reference to the Reducible
@@ -455,12 +493,42 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     private Reducible<CostNamePair<V>> sourceLocalMin;
                      */
 
+                        SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
+                        SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
+
+                        task.setRouteMapFromSource(routeMapFromSource);
+                        task.setSourceRouteCost(sourceRouteCost);
+                        task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
+                        //task.setSourceDump(dump0);
+
+                        task.setPeer(peer);
+
+                        task.setSourceFrontier(new ArrayList<>(sourceFrontier));
+                        task.setSourceClose(new HashSet<>(sourceClose));
+
+                        task.setSourceLocalMin(sourceLocalMin);
+
+
+                        numOfReadyTasksFromSource++;
+                        while (!sourceFrontierPlaceholder.isEmpty()) {
+                            V temp = sourceFrontierPlaceholder.poll();
+                            sourceFrontier.remove(temp);
+                        }
+                    }
+
+                    sourceFrontierPlaceholder.push(sourceFrontier.get(i));
+                    loopCounter.incrementAndGet();
+
+                } else {
+
+                    // setup the last task
                     SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
                     SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
 
-                    task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
-                    task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
+                    task.setRouteMapFromSource(routeMapFromSource);
+                    task.setSourceRouteCost(sourceRouteCost);
                     task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
+                    //task.setSourceDump(dump0);
 
                     task.setPeer(peer);
 
@@ -469,51 +537,23 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
                     task.setSourceLocalMin(sourceLocalMin);
 
-
-                    numOfReadyTasksFromSource++;
-                    while (!sourceFrontierPlaceholder.isEmpty()) {
-                        V temp = sourceFrontierPlaceholder.poll();
-                        sourceFrontier.remove(temp);
-                    }
+                    break;
                 }
-
-                sourceFrontierPlaceholder.push(sourceFrontier.get(i));
-                loopCounter.incrementAndGet();
-
-            } else {
-
-                // setup the last task
-                SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
-                SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
-
-                task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
-                task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
-                task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
-
-                task.setPeer(peer);
-
-                task.setSourceFrontier(new ArrayList<>(sourceFrontier));
-                task.setSourceClose(new HashSet<>(sourceClose));
-
-                task.setSourceLocalMin(sourceLocalMin);
-
-                break;
             }
-        }
 
-        // use the loopCounter to detect the intervals, reset for sink side
-        loopCounter.set(0);
+            // use the loopCounter to detect the intervals, reset for sink side
+            loopCounter.set(0);
 
-        // record how many tasks from sink have been set up
-        int numOfReadyTasksFromSink = 0;
+            // record how many tasks from sink have been set up
+            int numOfReadyTasksFromSink = 0;
 
-        // have a temporary placeholder for partitioned sink frontier
-        ArrayDeque<V> sinkFrontierPlaceholder = new ArrayDeque<>();
+            // have a temporary placeholder for partitioned sink frontier
+            ArrayDeque<V> sinkFrontierPlaceholder = new ArrayDeque<>();
 
-        // complete the setup of sink tasks
-        for (int i = 0; i < sinkFrontier.size(); i++) {
-            if (numOfReadyTasksFromSink < finalNumOfTasksForBothSide - 1) {
-                if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSinkSide == 0) {
+            // complete the setup of sink tasks
+            for (int i = 0; i < sinkFrontier.size(); i++) {
+                if (numOfReadyTasksFromSink < finalNumOfTasksForBothSide - 1) {
+                    if (loopCounter.get() != 0 && loopCounter.get() % cuttingIntervalForSinkSide == 0) {
 
                     /*
                     // get maps and dumps, and a reference to the Reducible
@@ -532,13 +572,42 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     private Reducible<CostNamePair<V>> sinkLocalMin;
                      */
 
+                        SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
+                        SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
+
+                        task.setRouteMapFromSink(routeMapFromSink);
+                        task.setSinkRouteCost(sinkRouteCost);
+                        task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
+                        //task.setSinkDump(dump1);
+
+                        task.setPeer(peer);
+
+                        task.setSinkFrontier(new ArrayList<>(sinkFrontier));
+                        task.setSinkClose(new HashSet<>(sinkClose));
+
+                        task.setSinkLocalMin(sinkLocalMin);
+
+
+                        numOfReadyTasksFromSink++;
+                        while (!sinkFrontierPlaceholder.isEmpty()) {
+                            V temp = sinkFrontierPlaceholder.poll();
+                            sinkFrontier.remove(temp);
+                        }
+                    }
+
+                    sinkFrontierPlaceholder.push(sinkFrontier.get(i));
+                    loopCounter.incrementAndGet();
+
+                } else {
+
+                    // setup the last task
                     SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
                     SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
 
-                    task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
-                    task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
-                    //System.out.println(sinkDumps.get(numOfReadyTasksFromSink)); // todo - remove logger
+                    task.setRouteMapFromSink(routeMapFromSink);
+                    task.setSinkRouteCost(sinkRouteCost);
                     task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
+                    //task.setSinkDump(dump1);
 
                     task.setPeer(peer);
 
@@ -547,45 +616,25 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
                     task.setSinkLocalMin(sinkLocalMin);
 
+                    break;
 
-                    numOfReadyTasksFromSink++;
-                    while (!sinkFrontierPlaceholder.isEmpty()) {
-                        V temp = sinkFrontierPlaceholder.poll();
-                        sinkFrontier.remove(temp);
-                    }
                 }
-
-                sinkFrontierPlaceholder.push(sinkFrontier.get(i));
-                loopCounter.incrementAndGet();
-
-            } else {
-
-                // setup the last task
-                SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
-                SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
-
-                task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
-                task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
-                //System.out.println(sinkDumps.get(numOfReadyTasksFromSink)); // todo - remove logger
-                task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
-
-                task.setPeer(peer);
-
-                task.setSinkFrontier(new ArrayList<>(sinkFrontier));
-                task.setSinkClose(new HashSet<>(sinkClose));
-
-                task.setSinkLocalMin(sinkLocalMin);
-
-                break;
-
             }
         }
+
+
+        // explicit barrier for populatorPromises, make sure every data structure is ready
+//        while (populatorPromises[0] != null) {}; // busy wait
+
+        // initialized future group, raw typed, cast the element before using it if needed
+        @Future
+        CostNamePair[] leastCostPathPromises = new CostNamePair[finalNumOfTasksForBothSide * 2];
 
 //        sourceTasks.forEach(veSourceTask -> System.out.println("peer dump: " + veSourceTask.getPeer()));
 //        sinkTasks.forEach(veSinkTask -> System.out.println("peer dump: " + veSinkTask.getPeer()));
 
         // somehow the @PT transpiler does not work
-        ExecutorService pool = Executors.newFixedThreadPool(leastCostPathPromises.length);
+        ExecutorService pool = Executors.newFixedThreadPool(finalNumOfTasksForBothSide * 2);
 
         List<Callable<Object>> calls = new ArrayList<>();
 
