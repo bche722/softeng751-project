@@ -11,7 +11,80 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <!-- Ant's properties -->
+        <src.dir>src</src.dir>
+        <lib.dir>libs</lib.dir>
+        <gen.dir>target/apt</gen.dir>
+        <tempGen.dir>tempGen</tempGen.dir>
+        <tempCompile.dir>target/classes</tempCompile.dir>
+        <build.dir>bin</build.dir>
+        <JAR.dir>${gen.dir}/algo</JAR.dir>
+        <APTJAR>${lib.dir}/@PT-1.5.2.jar</APTJAR>
+        <EXECJAR>${JAR.dir}/algo.jar</EXECJAR>
+        <Delimiter>;</Delimiter>
+        <commons-cli>${lib.dir}/commons-cli-1.4.jar</commons-cli>
     </properties>
+
+
+    <!--<build>-->
+        <!--<plugins>-->
+            <!--<plugin>-->
+                <!--<artifactId>maven-antrun-plugin</artifactId>-->
+                <!--<version>1.7</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<phase>package</phase>-->
+                        <!--<configuration>-->
+                            <!--<tasks>-->
+
+                                <!--&lt;!&ndash;-->
+                                  <!--Place any ant task here. You can add anything-->
+                                  <!--you can add between <target> and </target> in a-->
+                                  <!--build.xml.-->
+                                <!--&ndash;&gt;-->
+
+                                <!--&lt;!&ndash; *****************   PROCESSING ANNOTATIONS   ****************** &ndash;&gt;-->
+
+                                <!--<delete dir="${gen.dir}"/>-->
+                                <!--<delete dir="${tempGen.dir}"/>-->
+                                <!--<mkdir dir="${gen.dir}"/>-->
+                                <!--<mkdir dir="${tempGen.dir}"/>-->
+                                <!--&lt;!&ndash;<mkdir dir="${tempCompile.dir}"/>&ndash;&gt;-->
+
+                                <!--&lt;!&ndash;<javac compiler="modern" srcdir="${src.dir}" destdir="${tempCompile.dir}">&ndash;&gt;-->
+                                    <!--&lt;!&ndash;<classpath>&ndash;&gt;-->
+                                        <!--&lt;!&ndash;<pathelement path="${APTJAR}"  />&ndash;&gt;-->
+                                        <!--&lt;!&ndash;<pathelement path="${commons-cli}" />&ndash;&gt;-->
+                                    <!--&lt;!&ndash;</classpath>&ndash;&gt;-->
+                                <!--&lt;!&ndash;</javac>&ndash;&gt;-->
+
+                                <!--<exec executable="java">-->
+                                    <!--<arg line="-cp ${APTJAR}${Delimiter}${tempCompile.dir}${Delimiter}${commons-cli} spoon.Launcher -i ${src.dir} -o ${gen.dir} -p apt.processors.AptInitParaTaskProcessor"/>-->
+                                <!--</exec>-->
+                                <!--<exec executable="java">-->
+                                    <!--<arg line="-cp ${APTJAR}${Delimiter}${tempCompile.dir}${Delimiter}${commons-cli} spoon.Launcher -i ${gen.dir} -o ${tempGen.dir} -p apt.processors.AptFutureProcessor" />-->
+                                <!--</exec>-->
+                                <!--<delete dir="${gen.dir}"/>-->
+                                <!--<mkdir dir="${gen.dir}"/>-->
+                                <!--<exec executable="java">-->
+                                    <!--<arg line="-cp ${APTJAR}${Delimiter}${tempCompile.dir}${Delimiter}${commons-cli} spoon.Launcher -i ${tempGen.dir} -o ${gen.dir} -p apt.processors.AptGuiProcessor"/>-->
+                                <!--</exec>-->
+                                <!--<delete dir="${tempGen.dir}"/>-->
+
+                                <!--&lt;!&ndash;<delete dir="${tempCompile.dir}"/>&ndash;&gt;-->
+
+                                <!--<echo message="Processing Annotated Code..."/>-->
+
+                            <!--</tasks>-->
+                        <!--</configuration>-->
+                        <!--<goals>-->
+                            <!--<goal>run</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+        <!--</plugins>-->
+    <!--</build>-->
 
     <!-- local maven repo for @PT 1.5.2 -->
     <repositories>

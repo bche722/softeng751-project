@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="project_1" basedir="." default="all">
+
+
+    <property file="project_1.properties"/>
+    <!-- Uncomment the following property if no tests compilation is needed -->
+
+    <property name="skip.tests" value="true"/>
+
+
+    <!-- Compiler options -->
+
+    <property name="compiler.debug" value="on"/>
+    <property name="compiler.generate.no.warnings" value="off"/>
+    <property name="compiler.args" value=""/>
+    <property name="compiler.max.memory" value="700m"/>
+    <patternset id="ignored.files">
+        <exclude name="**/*.hprof/**"/>
+        <exclude name="**/*.pyc/**"/>
+        <exclude name="**/*.pyo/**"/>
+        <exclude name="**/*.rbc/**"/>
+        <exclude name="**/*.yarb/**"/>
+        <exclude name="**/*~/**"/>
+        <exclude name="**/.DS_Store/**"/>
+        <exclude name="**/.git/**"/>
+        <exclude name="**/.hg/**"/>
+        <exclude name="**/.svn/**"/>
+        <exclude name="**/CVS/**"/>
+        <exclude name="**/__pycache__/**"/>
+        <exclude name="**/_svn/**"/>
+        <exclude name="**/vssver.scc/**"/>
+        <exclude name="**/vssver2.scc/**"/>
+    </patternset>
+    <patternset id="library.patterns">
+        <include name="*.egg"/>
+        <include name="*.jar"/>
+        <include name="*.ear"/>
+        <include name="*.swc"/>
+        <include name="*.war"/>
+        <include name="*.zip"/>
+        <include name="*.ane"/>
+    </patternset>
+    <patternset id="compiler.resources">
+        <exclude name="**/?*.java"/>
+        <exclude name="**/?*.form"/>
+        <exclude name="**/?*.class"/>
+        <exclude name="**/?*.groovy"/>
+        <exclude name="**/?*.scala"/>
+        <exclude name="**/?*.flex"/>
+        <exclude name="**/?*.kt"/>
+        <exclude name="**/?*.clj"/>
+        <exclude name="**/?*.aj"/>
+    </patternset>
+
+    <!-- JDK definitions -->
+
+    <property name="jdk.bin.9.0" value="${jdk.home.9.0}/bin"/>
+    <path id="jdk.classpath.9.0">
+        <fileset dir="${jdk.home.9.0}">
+            <include name="../jdk-9.0.1!/java.activation"/>
+            <include name="../jdk-9.0.1!/java.base"/>
+            <include name="../jdk-9.0.1!/java.compiler"/>
+            <include name="../jdk-9.0.1!/java.corba"/>
+            <include name="../jdk-9.0.1!/java.datatransfer"/>
+            <include name="../jdk-9.0.1!/java.desktop"/>
+            <include name="../jdk-9.0.1!/java.instrument"/>
+            <include name="../jdk-9.0.1!/java.jnlp"/>
+            <include name="../jdk-9.0.1!/java.logging"/>
+            <include name="../jdk-9.0.1!/java.management"/>
+            <include name="../jdk-9.0.1!/java.management.rmi"/>
+            <include name="../jdk-9.0.1!/java.naming"/>
+            <include name="../jdk-9.0.1!/java.prefs"/>
+            <include name="../jdk-9.0.1!/java.rmi"/>
+            <include name="../jdk-9.0.1!/java.scripting"/>
+            <include name="../jdk-9.0.1!/java.se"/>
+            <include name="../jdk-9.0.1!/java.se.ee"/>
+            <include name="../jdk-9.0.1!/java.security.jgss"/>
+            <include name="../jdk-9.0.1!/java.security.sasl"/>
+            <include name="../jdk-9.0.1!/java.smartcardio"/>
+            <include name="../jdk-9.0.1!/java.sql"/>
+            <include name="../jdk-9.0.1!/java.sql.rowset"/>
+            <include name="../jdk-9.0.1!/java.transaction"/>
+            <include name="../jdk-9.0.1!/java.xml"/>
+            <include name="../jdk-9.0.1!/java.xml.bind"/>
+            <include name="../jdk-9.0.1!/java.xml.crypto"/>
+            <include name="../jdk-9.0.1!/java.xml.ws"/>
+            <include name="../jdk-9.0.1!/java.xml.ws.annotation"/>
+            <include name="../jdk-9.0.1!/javafx.base"/>
+            <include name="../jdk-9.0.1!/javafx.controls"/>
+            <include name="../jdk-9.0.1!/javafx.deploy"/>
+            <include name="../jdk-9.0.1!/javafx.fxml"/>
+            <include name="../jdk-9.0.1!/javafx.graphics"/>
+            <include name="../jdk-9.0.1!/javafx.media"/>
+            <include name="../jdk-9.0.1!/javafx.swing"/>
+            <include name="../jdk-9.0.1!/javafx.web"/>
+            <include name="../jdk-9.0.1!/jdk.accessibility"/>
+            <include name="../jdk-9.0.1!/jdk.attach"/>
+            <include name="../jdk-9.0.1!/jdk.charsets"/>
+            <include name="../jdk-9.0.1!/jdk.compiler"/>
+            <include name="../jdk-9.0.1!/jdk.crypto.cryptoki"/>
+            <include name="../jdk-9.0.1!/jdk.crypto.ec"/>
+            <include name="../jdk-9.0.1!/jdk.crypto.mscapi"/>
+            <include name="../jdk-9.0.1!/jdk.deploy"/>
+            <include name="../jdk-9.0.1!/jdk.deploy.controlpanel"/>
+            <include name="../jdk-9.0.1!/jdk.dynalink"/>
+            <include name="../jdk-9.0.1!/jdk.editpad"/>
+            <include name="../jdk-9.0.1!/jdk.hotspot.agent"/>
+            <include name="../jdk-9.0.1!/jdk.httpserver"/>
+            <include name="../jdk-9.0.1!/jdk.incubator.httpclient"/>
+            <include name="../jdk-9.0.1!/jdk.internal.ed"/>
+            <include name="../jdk-9.0.1!/jdk.internal.jvmstat"/>
+            <include name="../jdk-9.0.1!/jdk.internal.le"/>
+            <include name="../jdk-9.0.1!/jdk.internal.opt"/>
+            <include name="../jdk-9.0.1!/jdk.internal.vm.ci"/>
+            <include name="../jdk-9.0.1!/jdk.jartool"/>
+            <include name="../jdk-9.0.1!/jdk.javadoc"/>
+            <include name="../jdk-9.0.1!/jdk.javaws"/>
+            <include name="../jdk-9.0.1!/jdk.jcmd"/>
+            <include name="../jdk-9.0.1!/jdk.jconsole"/>
+            <include name="../jdk-9.0.1!/jdk.jdeps"/>
+            <include name="../jdk-9.0.1!/jdk.jdi"/>
+            <include name="../jdk-9.0.1!/jdk.jdwp.agent"/>
+            <include name="../jdk-9.0.1!/jdk.jfr"/>
+            <include name="../jdk-9.0.1!/jdk.jlink"/>
+            <include name="../jdk-9.0.1!/jdk.jshell"/>
+            <include name="../jdk-9.0.1!/jdk.jsobject"/>
+            <include name="../jdk-9.0.1!/jdk.jstatd"/>
+            <include name="../jdk-9.0.1!/jdk.localedata"/>
+            <include name="../jdk-9.0.1!/jdk.management"/>
+            <include name="../jdk-9.0.1!/jdk.management.agent"/>
+            <include name="../jdk-9.0.1!/jdk.management.cmm"/>
+            <include name="../jdk-9.0.1!/jdk.management.jfr"/>
+            <include name="../jdk-9.0.1!/jdk.management.resource"/>
+            <include name="../jdk-9.0.1!/jdk.naming.dns"/>
+            <include name="../jdk-9.0.1!/jdk.naming.rmi"/>
+            <include name="../jdk-9.0.1!/jdk.net"/>
+            <include name="../jdk-9.0.1!/jdk.pack"/>
+            <include name="../jdk-9.0.1!/jdk.packager"/>
+            <include name="../jdk-9.0.1!/jdk.packager.services"/>
+            <include name="../jdk-9.0.1!/jdk.plugin"/>
+            <include name="../jdk-9.0.1!/jdk.plugin.dom"/>
+            <include name="../jdk-9.0.1!/jdk.plugin.server"/>
+            <include name="../jdk-9.0.1!/jdk.policytool"/>
+            <include name="../jdk-9.0.1!/jdk.rmic"/>
+            <include name="../jdk-9.0.1!/jdk.scripting.nashorn"/>
+            <include name="../jdk-9.0.1!/jdk.scripting.nashorn.shell"/>
+            <include name="../jdk-9.0.1!/jdk.sctp"/>
+            <include name="../jdk-9.0.1!/jdk.security.auth"/>
+            <include name="../jdk-9.0.1!/jdk.security.jgss"/>
+            <include name="../jdk-9.0.1!/jdk.snmp"/>
+            <include name="../jdk-9.0.1!/jdk.unsupported"/>
+            <include name="../jdk-9.0.1!/jdk.xml.bind"/>
+            <include name="../jdk-9.0.1!/jdk.xml.dom"/>
+            <include name="../jdk-9.0.1!/jdk.xml.ws"/>
+            <include name="../jdk-9.0.1!/jdk.zipfs"/>
+            <include name="../jdk-9.0.1!/oracle.desktop"/>
+            <include name="../jdk-9.0.1!/oracle.net"/>
+        </fileset>
+    </path>
+
+    <property name="project.jdk.home" value="${jdk.home.9.0}"/>
+    <property name="project.jdk.bin" value="${jdk.bin.9.0}"/>
+    <property name="project.jdk.classpath" value="jdk.classpath.9.0"/>
+
+
+    <!-- Project Libraries -->
+
+    <path id="library.maven:_commons-cli:commons-cli:1.4.classpath">
+        <pathelement location="${path.variable.maven_repository}/commons-cli/commons-cli/1.4/commons-cli-1.4.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:annotation-based-pt-docs:1.5.2.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/annotation-based-PT-docs/1.5.2/annotation-based-PT-docs-1.5.2.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:annotation-based-pt-src:1.5.2.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/annotation-based-PT-src/1.5.2/annotation-based-PT-src-1.5.2.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:annotation-based-pt:1.5.2.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/annotation-based-PT/1.5.2/annotation-based-PT-1.5.2.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:parcutils-javadoc:1.2.4.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/PARCutils-javadoc/1.2.4/PARCutils-javadoc-1.2.4.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:parcutils-src:1.2.4.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/PARCutils-src/1.2.4/PARCutils-src-1.2.4.jar"/>
+    </path>
+
+    <path id="library.maven:_parc-uoa:parcutils:1.2.4.classpath">
+        <pathelement location="${path.variable.maven_repository}/PARC-UoA/PARCutils/1.2.4/PARCutils-1.2.4.jar"/>
+    </path>
+
+
+    <!-- Global Libraries -->
+
+    <!-- Modules -->
+
+    <import file="${basedir}/.idea/module_project_1.xml"/>
+
+    <target name="init" description="Build initialization">
+        <!-- Perform any build initialization in this target -->
+    </target>
+
+    <!--<target name="clean" depends="clean.module.project_1" description="cleanup all"/>-->
+
+    <target name="build.modules" depends="init, clean, compile.module.project_1" description="build all modules"/>
+
+    <target name="all" depends="build.modules" description="build all"/>
+
+    <!-- @PT stuff -->
+    <property name="src.dir"        value="src" />
+    <property name="build.dir"      value="bin" />
+    <property name="libs.dir"       value="libs"/>
+    <property name="gen.dir"        value="gen" />
+    <property name="tempGen.dir"    value="tempGen"/>
+    <property name="tmp.dir"		value="tmp" />
+    <property name="Algo.dir"     value="${gen.dir}/Algo"        />
+    <property name="AlgoEXECJAR"     value="${Algo.dir}/Algo.jar" />
+    <property name="@PTJAR"      value="${libs.dir}/@PT-1.5.2.jar" />
+    <property name="JOMPJAR"       value="${libs.dir}/jomp-1.0.jar"    />
+    <property name="PJJAR"	       value="${libs.dir}/pyjama-1.5.2.jar"/>
+    <property name="COMMONCLIJAR"	       value="${libs.dir}/commons-cli-1.4.jar"/>
+
+    <target name="decideOS">
+        <condition property="isWindows">
+            <os family="windows"/>
+        </condition>
+        <condition property="isLinux">
+            <os family="unix"/>
+        </condition>
+    </target>
+
+    <target name="winDelim" depends="decideOS" if="isWindows">
+        <property name="Delimiter" value=";" />
+        <echo message="The OS is identified to be of Windows family!" />
+    </target>
+
+    <target name="linDelim" depends="decideOS" if="isLinux">
+        <property name="Delimiter" value=":" />
+        <echo message="The OS is identified to be of Unix/Linux family!"/>
+    </target>
+
+    <target name="clean" depends="winDelim, linDelim">
+        <delete dir="${build.dir}" />
+        <delete dir="${Algo.dir}" />
+    </target>
+
+    <target name="mkDir" depends="clean">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${gen.dir}"  />
+        <mkdir dir="${Algo.dir}"/>
+    </target>
+
+    <target name="compile" depends="mkDir">
+        <javac target="1.8" source="1.8" srcdir="${src.dir}"  destdir="${build.dir}">
+            <classpath>
+                <pathelement path="${@PTJAR}"/>
+                <pathelement path="${COMMONCLIJAR}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="compile-transpiled-src" depends="mkDir, processAnnotation">
+        <javac target="1.8" source="1.8" srcdir="${gen.dir}"  destdir="${build.dir}">
+            <classpath>
+                <pathelement path="${@PTJAR}"/>
+                <pathelement path="${COMMONCLIJAR}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- CREATING THE EXECUTABLE JAR FILE -->
+
+    <target name="compressJar" depends="compile">
+        <jar destfile="${AlgoEXECJAR}"  basedir="${build.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="Main"/>
+            </manifest>
+            <zipgroupfileset dir="${libs.dir}" includes="**/*.jar"/>
+        </jar>
+    </target>
+
+    <target name="compressTranspiledJar" depends="compile-transpiled-src">
+        <jar destfile="${AlgoEXECJAR}"  basedir="${build.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="Main"/>
+            </manifest>
+            <zipgroupfileset dir="${libs.dir}" includes="**/*.jar"/>
+        </jar>
+    </target>
+
+    <!-- EXECUTING THE EXECUTABLE JAR FILE -->
+
+    <target name="main" depends="compressJar">
+        <java jar="${AlgoEXECJAR}" fork="true"></java>
+    </target>
+
+    <!-- *******************  PROCESSING ANNOTATIONS   ****************** -->
+
+    <target name="mkTmpDir" depends="winDelim, linDelim">
+        <delete dir="${gen.dir}"/>
+        <delete dir="${tempGen.dir}"/>
+        <mkdir dir="${tmp.dir}"/>
+        <mkdir dir="${gen.dir}"/>
+        <mkdir dir="${tempGen.dir}"/>
+    </target>
+
+    <target name="tempCompile" depends="mkTmpDir">
+        <javac target="1.8" source="1.8" srcdir="${src.dir}" destdir="${tmp.dir}">
+            <classpath>
+                <pathelement path="${@PTJAR}"/>
+                <pathelement path="${COMMONCLIJAR}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="process" depends="tempCompile">
+        <exec executable="java">
+            <arg
+                    line="-cp ${@PTJAR}${Delimiter}${COMMONCLIJAR}${Delimiter}${tmp.dir} spoon.Launcher -o ${gen.dir} -i ${src.dir} -p apt.processors.AptInitParaTaskProcessor"/>
+        </exec>
+        <exec executable="java">
+            <arg
+                    line="-cp ${@PTJAR}${Delimiter}${COMMONCLIJAR}${Delimiter}${tmp.dir} spoon.Launcher -o ${tempGen.dir} -i ${gen.dir} -p apt.processors.AptFutureProcessor"/>
+        </exec>
+        <delete dir="${gen.dir}"/>
+        <mkdir dir="${gen.dir}"/>
+        <exec executable="java">
+            <arg
+                    line="-cp ${@PTJAR}${Delimiter}${COMMONCLIJAR}${Delimiter}${tmp.dir} spoon.Launcher -o ${gen.dir} -i ${tempGen.dir} -p apt.processors.AptGuiProcessor"/>
+        </exec>
+        <delete dir="${tempGen.dir}"/>
+    </target>
+
+    <target name="deleteTmp" depends="process">
+        <delete dir="${tmp.dir}"/>
+    </target>
+
+    <target name="processAnnotation" depends="deleteTmp">
+        <echo message="Processing @PT Annotated Code..."/>
+    </target>
+
+    <target name="print-version">
+        <echo>Java/JVM version: ${ant.java.version}</echo>
+        <echo>Java/JVM detail version: ${java.version}</echo>
+    </target>
+
+</project>

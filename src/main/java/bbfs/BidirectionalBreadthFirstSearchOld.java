@@ -2,6 +2,7 @@
 package bbfs;
 
 import apt.annotations.Future;
+import apt.annotations.InitParaTask;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
 import graph.Vertex;
@@ -262,6 +263,8 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
 
     private Void populateDataStructures(ArrayList<V> sourceFrontier, ArrayList<V> sinkFrontier, V v){
 
+        System.out.println("populating data. thread id : " + Thread.currentThread().getId());
+
         prepareMaps(v);
         sourceFrontier.add(v);
         sinkFrontier.add(v);
@@ -277,7 +280,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
      */
     private int sourceTask(V foo, V child) {
 
-        System.out.println("thread id : " + Thread.currentThread().getId());
+        //System.out.println("thread id : " + Thread.currentThread().getId());
 
         int newCost = sourceRouteCost.get(foo) + child.weight() + graph.edgeBetween(foo, child).weight();
 
@@ -309,7 +312,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
      */
     private int sinkTask(V bar, V parent) {
 
-        System.out.println("thread id : " + Thread.currentThread().getId());
+        //System.out.println("thread id : " + Thread.currentThread().getId());
 
         int newCost = sinkRouteCost.get(bar) + parent.weight() + graph.edgeBetween(parent, bar).weight();
         if (newCost < sinkRouteCost.get(parent)) {
@@ -331,6 +334,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
         return localLeastCost; // just in case if manual reduction is needed (i.e., if Reducible bugs out)
     }
 
+    @InitParaTask
     private void parallelSearch(){
 
         CostComparatorForVertices<V> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);

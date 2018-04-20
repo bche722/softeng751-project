@@ -1,0 +1,5 @@
+java -cp libs\@PT-1.5.2.jar;target\classes;libs\commons-cli-1.4.jar spoon.Launcher -i src -o target\apt -p apt.processors.AptInitParaTaskProcessor
+
+java -cp libs\@PT-1.5.2.jar;target\classes;libs\commons-cli-1.4.jar spoon.Launcher -i target\apt -o tempGen -p apt.processors.AptFutureProcessor
+
+java -cp libs\@PT-1.5.2.jar;target\classes;libs\commons-cli-1.4.jar spoon.Launcher -i tempGen -o target\apt_final -p apt.processors.AptGuiProcessor
