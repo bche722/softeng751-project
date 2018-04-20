@@ -61,8 +61,8 @@ public class Main {
                     switch (algo_name){
                         case "bbfs":
                             isParallel = cmd.hasOption("p");
-//                            new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearch<>(fFlagHandler(cmd), isParallel))).start();
-                            new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearchOld<>(fFlagHandler(cmd), isParallel))).start();
+                            new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearch<>(fFlagHandler(cmd), isParallel))).start();
+//                            new Thread(new Dispatcher<>(new BidirectionalBreadthFirstSearchOld<>(fFlagHandler(cmd), isParallel))).start();
                             break;
                         case "iddfs":
                             isParallel = cmd.hasOption("p");

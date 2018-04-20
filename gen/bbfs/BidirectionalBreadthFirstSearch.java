@@ -281,8 +281,8 @@ public class BidirectionalBreadthFirstSearch<V extends graph.Vertex, E extends g
                     if (((loopCounter.get()) != 0) && (((loopCounter.get()) % cuttingIntervalForSourceSide) == 0)) {
                         bbfs.SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
                         bbfs.SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
-                        task.setRouteMapFromSource(routeMapFromSource);
-                        task.setSourceRouteCost(sourceRouteCost);
+                        task.setRouteMapFromSource(new java.util.concurrent.ConcurrentHashMap<>(routeMapFromSource));
+                        task.setSourceRouteCost(new java.util.concurrent.ConcurrentHashMap<>(sourceRouteCost));
                         task.setSourceDump(new bbfs.MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
                         task.setPeer(peer);
                         task.setSourceFrontier(new java.util.ArrayList<>(sourceFrontier));
@@ -299,8 +299,8 @@ public class BidirectionalBreadthFirstSearch<V extends graph.Vertex, E extends g
                 }else {
                     bbfs.SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
                     bbfs.SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
-                    task.setRouteMapFromSource(routeMapFromSource);
-                    task.setSourceRouteCost(sourceRouteCost);
+                    task.setRouteMapFromSource(new java.util.concurrent.ConcurrentHashMap<>(routeMapFromSource));
+                    task.setSourceRouteCost(new java.util.concurrent.ConcurrentHashMap<>(sourceRouteCost));
                     task.setSourceDump(new bbfs.MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
                     task.setPeer(peer);
                     task.setSourceFrontier(new java.util.ArrayList<>(sourceFrontier));
@@ -317,8 +317,8 @@ public class BidirectionalBreadthFirstSearch<V extends graph.Vertex, E extends g
                     if (((loopCounter.get()) != 0) && (((loopCounter.get()) % cuttingIntervalForSinkSide) == 0)) {
                         bbfs.SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
                         bbfs.SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
-                        task.setRouteMapFromSink(routeMapFromSink);
-                        task.setSinkRouteCost(sinkRouteCost);
+                        task.setRouteMapFromSink(new java.util.concurrent.ConcurrentHashMap<>(routeMapFromSink));
+                        task.setSinkRouteCost(new java.util.concurrent.ConcurrentHashMap<>(sinkRouteCost));
                         task.setSinkDump(new bbfs.MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
                         task.setPeer(peer);
                         task.setSinkFrontier(new java.util.ArrayList<>(sinkFrontier));
@@ -335,8 +335,8 @@ public class BidirectionalBreadthFirstSearch<V extends graph.Vertex, E extends g
                 }else {
                     bbfs.SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
                     bbfs.SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
-                    task.setRouteMapFromSink(routeMapFromSink);
-                    task.setSinkRouteCost(sinkRouteCost);
+                    task.setRouteMapFromSink(new java.util.concurrent.ConcurrentHashMap<>(routeMapFromSink));
+                    task.setSinkRouteCost(new java.util.concurrent.ConcurrentHashMap<>(sinkRouteCost));
                     task.setSinkDump(new bbfs.MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
                     task.setPeer(peer);
                     task.setSinkFrontier(new java.util.ArrayList<>(sinkFrontier));
@@ -348,24 +348,30 @@ public class BidirectionalBreadthFirstSearch<V extends graph.Vertex, E extends g
         }
         bbfs.CostNamePair[] leastCostPathPromises = new bbfs.CostNamePair[finalNumOfTasksForBothSide * 2];
         pt.runtime.TaskIDGroup<bbfs.CostNamePair> __leastCostPathPromisesPtTaskIDGroup__ = new pt.runtime.TaskIDGroup<>((finalNumOfTasksForBothSide * 2));
-        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool((finalNumOfTasksForBothSide * 2));
-        java.util.List<java.util.concurrent.Callable<java.lang.Object>> calls = new java.util.ArrayList<>();
         for (int i = 0; i < (leastCostPathPromises.length); i++) {
             if (i < finalNumOfTasksForBothSide) {
-                calls.add(java.util.concurrent.Executors.callable(sourceTasks.get(i)));
+                int index = i;
+                pt.runtime.TaskInfoNoArgs<bbfs.CostNamePair> ____leastCostPathPromises_1__PtTask__ = ((pt.runtime.TaskInfoNoArgs<bbfs.CostNamePair>) (pt.runtime.ParaTask.asTask(pt.runtime.ParaTask.TaskType.ONEOFF, ((pt.functionalInterfaces.FunctorNoArgsWithReturn<bbfs.CostNamePair>) (() -> sourceTasks.get(index).execute())))));
+                pt.runtime.TaskID<bbfs.CostNamePair> ____leastCostPathPromises_1__PtTaskID__ = ____leastCostPathPromises_1__PtTask__.start();
+                __leastCostPathPromisesPtTaskIDGroup__.setInnerTask(i, ____leastCostPathPromises_1__PtTaskID__);
                 java.lang.System.out.println(("dispatching : " + i));
             }else {
-                calls.add(java.util.concurrent.Executors.callable(sinkTasks.get((i - (sinkTasks.size())))));
+                int index = i;
+                pt.runtime.TaskInfoNoArgs<bbfs.CostNamePair> ____leastCostPathPromises_2__PtTask__ = ((pt.runtime.TaskInfoNoArgs<bbfs.CostNamePair>) (pt.runtime.ParaTask.asTask(pt.runtime.ParaTask.TaskType.ONEOFF, ((pt.functionalInterfaces.FunctorNoArgsWithReturn<bbfs.CostNamePair>) (() -> sinkTasks.get((index - (sinkTasks.size()))).execute())))));
+                pt.runtime.TaskID<bbfs.CostNamePair> ____leastCostPathPromises_2__PtTaskID__ = ____leastCostPathPromises_2__PtTask__.start();
+                __leastCostPathPromisesPtTaskIDGroup__.setInnerTask(i, ____leastCostPathPromises_2__PtTaskID__);
                 java.lang.System.out.println(("dispatching : " + i));
             }
         }
         try {
-            pool.invokeAll(calls);
-        } catch (java.lang.InterruptedException e) {
+            __leastCostPathPromisesPtTaskIDGroup__.waitTillFinished();
+        } catch (java.lang.Exception e) {
             e.printStackTrace();
-        } finally {
-            pool.shutdown();
         }
+        for (int __leastCostPathPromisesLoopIndex1__ = 0; __leastCostPathPromisesLoopIndex1__ < (leastCostPathPromises.length); __leastCostPathPromisesLoopIndex1__++)
+            leastCostPathPromises[__leastCostPathPromisesLoopIndex1__] = __leastCostPathPromisesPtTaskIDGroup__.getInnerTaskResult(__leastCostPathPromisesLoopIndex1__);
+        
+        bbfs.CostNamePair temp = leastCostPathPromises[0];
         bbfs.CostNamePair<V> sourceSideResult = sourceLocalMin.reduce(new bbfs.Reducer<>());
         bbfs.CostNamePair<V> sinkSideResult = sinkLocalMin.reduce(new bbfs.Reducer<>());
         if ((sourceSideResult.getCost()) < (sinkSideResult.getCost())) {

@@ -90,7 +90,7 @@ public class SourceTask<V extends Vertex, E extends DirectedEdge<V>> implements 
 
         System.out.println("thread id from source task : " + Thread.currentThread().getId());
 
-        // todo - continue searching and set local least cost (localMin)
+
         //System.out.println(sourceDump.get());
         //System.out.println(peer.getSinkDump().get());
         //System.out.println(sourceLocalMin);

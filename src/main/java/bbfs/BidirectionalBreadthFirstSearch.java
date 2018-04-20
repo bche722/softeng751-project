@@ -331,7 +331,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
         HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
 
         // preparation
-//        @Future
+//        @Future // data preparation is not parallelizable, see BidirectionalBreathFirstSearchOld
 //        Void[] populatorPromises = new Void[graph.verticesSet().size()];
         long start_time = System.nanoTime();
 //        Iterator<V> vertexIterator = graph.vertices().iterator();
@@ -514,8 +514,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                         SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
                         SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
 
-                        task.setRouteMapFromSource(routeMapFromSource);
-                        task.setSourceRouteCost(sourceRouteCost);
+                        task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
+                        task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
                         task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
                         //task.setSourceDump(dump0);
 
@@ -543,8 +543,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     SourceTask<V, E> task = sourceTasks.get(numOfReadyTasksFromSource);
                     SinkTask<V, E> peer = sinkTasks.get(numOfReadyTasksFromSource);
 
-                    task.setRouteMapFromSource(routeMapFromSource);
-                    task.setSourceRouteCost(sourceRouteCost);
+                    task.setRouteMapFromSource(new ConcurrentHashMap<>(routeMapFromSource));
+                    task.setSourceRouteCost(new ConcurrentHashMap<>(sourceRouteCost));
                     task.setSourceDump(new MutableInt(sourceDumps.get(numOfReadyTasksFromSource)));
                     //task.setSourceDump(dump0);
 
@@ -593,8 +593,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                         SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
                         SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
 
-                        task.setRouteMapFromSink(routeMapFromSink);
-                        task.setSinkRouteCost(sinkRouteCost);
+                        task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
+                        task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
                         task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
                         //task.setSinkDump(dump1);
 
@@ -622,8 +622,8 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
                     SinkTask<V, E> task = sinkTasks.get(numOfReadyTasksFromSink);
                     SourceTask<V, E> peer = sourceTasks.get(numOfReadyTasksFromSink);
 
-                    task.setRouteMapFromSink(routeMapFromSink);
-                    task.setSinkRouteCost(sinkRouteCost);
+                    task.setRouteMapFromSink(new ConcurrentHashMap<>(routeMapFromSink));
+                    task.setSinkRouteCost(new ConcurrentHashMap<>(sinkRouteCost));
                     task.setSinkDump(new MutableInt(sinkDumps.get(numOfReadyTasksFromSink)));
                     //task.setSinkDump(dump1);
 
@@ -642,7 +642,7 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 
 
         // explicit barrier for populatorPromises, make sure every data structure is ready
-//        while (populatorPromises[0] != null) {}; // busy wait
+//        while (populatorPromises[0] != null) {}; // data preparation is not parallelizable, don't do it
 
         // initialized future group, raw typed, cast the element before using it if needed
         @Future
@@ -651,10 +651,10 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
 //        sourceTasks.forEach(veSourceTask -> System.out.println("peer dump: " + veSourceTask.getPeer()));
 //        sinkTasks.forEach(veSinkTask -> System.out.println("peer dump: " + veSinkTask.getPeer()));
 
-        // somehow the @PT transpiler does not work
-        ExecutorService pool = Executors.newFixedThreadPool(finalNumOfTasksForBothSide * 2);
-
-        List<Callable<Object>> calls = new ArrayList<>();
+        // just for testing purpose
+//        ExecutorService pool = Executors.newFixedThreadPool(finalNumOfTasksForBothSide * 2);
+//
+//        List<Callable<Object>> calls = new ArrayList<>();
 
         // return type of executor.invokeAll : List<Future<Object>> futures = executor.invokeAll(calls);
 
@@ -664,32 +664,34 @@ public class BidirectionalBreadthFirstSearch<V extends Vertex, E extends Directe
             if (i < finalNumOfTasksForBothSide) {
 
                 // dispatching source tasks
-                //leastCostPathPromises[i] = sourceTasks.get(i).execute();
-                calls.add(Executors.callable(sourceTasks.get(i)));
+                int index = i; // must be effectively final, @PT covert the following code to lambda internally
+                leastCostPathPromises[i] = sourceTasks.get(index).execute();
+                //calls.add(Executors.callable(sourceTasks.get(i)));
                 System.out.println("dispatching : " + i);
 
             } else {
 
                 // dispatching sink tasks
-                //leastCostPathPromises[i] = sinkTasks.get(i - sinkTasks.size()).execute();
-                calls.add(Executors.callable(sinkTasks.get(i - sinkTasks.size())));
+                int index = i; // must be effectively final, @PT covert the following code to lambda internally
+                leastCostPathPromises[i] = sinkTasks.get(index - sinkTasks.size()).execute();
+                //calls.add(Executors.callable(sinkTasks.get(i - sinkTasks.size())));
                 System.out.println("dispatching : " + i);
 
             }
 
         }
 
-        // explicit barrier for @PT future group, busy wait
-        //while (! (leastCostPathPromises[0] != null)) {};
+        // explicit barrier for @PT future group
+        CostNamePair temp = leastCostPathPromises[0];
 
-        // use executor service for now...
-        try {
-            pool.invokeAll(calls);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            pool.shutdown();
-        }
+        // use executor service for testing purpose
+//        try {
+//            pool.invokeAll(calls);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } finally {
+//            pool.shutdown();
+//        }
 
         CostNamePair<V> sourceSideResult = sourceLocalMin.reduce(new Reducer<>());
         CostNamePair<V> sinkSideResult = sinkLocalMin.reduce(new Reducer<>());

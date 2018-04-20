@@ -137,7 +137,6 @@ public class BidirectionalBreadthFirstSearchOld<V extends graph.Vertex, E extend
     private pu.RedLib.Reducible<java.lang.Integer> sinkLocalMin = new pu.RedLib.Reducible<>(java.lang.Integer.MAX_VALUE);
 
     private java.lang.Void populateDataStructures(java.util.ArrayList<V> sourceFrontier, java.util.ArrayList<V> sinkFrontier, V v) {
-        java.lang.System.out.println(("populating data. thread id : " + (java.lang.Thread.currentThread().getId())));
         prepareMaps(v);
         sourceFrontier.add(v);
         sinkFrontier.add(v);
@@ -182,6 +181,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends graph.Vertex, E extend
 
     private void parallelSearch() {
         pt.runtime.ParaTask.init(pt.runtime.ParaTask.PTSchedulingPolicy.MixedSchedule, java.lang.Runtime.getRuntime().availableProcessors());
+        java.lang.System.out.println("Old Parallel Branching Version");
         utils.CostComparatorForVertices<V> sourceComparator = new utils.CostComparatorForVertices<>(sourceRouteCost);
         utils.CostComparatorForVertices<V> sinkComparator = new utils.CostComparatorForVertices<>(sinkRouteCost);
         java.util.ArrayList<V> sourceFrontier = new java.util.ArrayList<>();
@@ -189,20 +189,12 @@ public class BidirectionalBreadthFirstSearchOld<V extends graph.Vertex, E extend
         java.util.HashSet<V> sourceClose = new java.util.HashSet<>();
         java.util.HashSet<V> sinkClose = new java.util.HashSet<>();
         java.lang.Void[] populatorPromises = new java.lang.Void[graph.verticesSet().size()];
-        pt.runtime.TaskIDGroup<java.lang.Void> __populatorPromisesPtTaskIDGroup__ = new pt.runtime.TaskIDGroup<>(graph.verticesSet().size());
         java.util.Iterator<V> vertexIterator = graph.vertices().iterator();
         for (int i = 0; i < (graph.verticesSet().size()); i++) {
-            pt.runtime.TaskInfoTwoArgs<java.lang.Void, java.util.ArrayList<V>, java.util.ArrayList<V>> ____populatorPromises_1__PtTask__ = ((pt.runtime.TaskInfoTwoArgs<java.lang.Void, java.util.ArrayList<V>, java.util.ArrayList<V>>) (pt.runtime.ParaTask.asTask(pt.runtime.ParaTask.TaskType.ONEOFF, ((pt.functionalInterfaces.FunctorTwoArgsNoReturn<java.util.ArrayList<V>, java.util.ArrayList<V>>) (( __sinkFrontierPtNonLambdaArg__, __sourceFrontierPtNonLambdaArg__) -> populateDataStructures(__sourceFrontierPtNonLambdaArg__, __sinkFrontierPtNonLambdaArg__, vertexIterator.next()))))));
-            pt.runtime.TaskID<java.lang.Void> ____populatorPromises_1__PtTaskID__ = ____populatorPromises_1__PtTask__.start(sinkFrontier, sourceFrontier);
-            __populatorPromisesPtTaskIDGroup__.setInnerTask(i, ____populatorPromises_1__PtTaskID__);
+            populatorPromises[i] = populateDataStructures(sourceFrontier, sinkFrontier, vertexIterator.next());
         }
         int[] leastCostPathSoFar = new int[]{ java.lang.Integer.MAX_VALUE };
         int[] dump = new int[]{ 0 , 0 };
-        try {
-            __populatorPromisesPtTaskIDGroup__.waitTillFinished();
-        } catch (java.lang.Exception e) {
-            e.printStackTrace();
-        }
         while ((populatorPromises[0]) != null) {
         } 
         while (!((((dump[0]) != 0) && ((dump[1]) != 0)) && (((dump[0]) + (dump[1])) >= (leastCostPathSoFar[0])))) {

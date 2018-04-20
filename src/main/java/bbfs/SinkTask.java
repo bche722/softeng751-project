@@ -90,7 +90,7 @@ public class SinkTask<V extends Vertex, E extends DirectedEdge<V>> implements Ta
 
         System.out.println("thread id from sink task : " + Thread.currentThread().getId());
 
-        // todo - continue searching and set local least cost (localMin)
+
         int numOfNodes = graph.verticesSet().size();
         int loopCounter = 0;
 

@@ -38,7 +38,7 @@ public class Main {
                     switch (algo_name) {
                         case "bbfs" :
                             isParallel = cmd.hasOption("p");
-                            new java.lang.Thread(new Main.Dispatcher<>(new bbfs.BidirectionalBreadthFirstSearchOld<>(Main.fFlagHandler(cmd), isParallel))).start();
+                            new java.lang.Thread(new Main.Dispatcher<>(new bbfs.BidirectionalBreadthFirstSearch<>(Main.fFlagHandler(cmd), isParallel))).start();
                             break;
                         case "iddfs" :
                             isParallel = cmd.hasOption("p");

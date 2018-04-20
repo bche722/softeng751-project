@@ -263,7 +263,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
 
     private Void populateDataStructures(ArrayList<V> sourceFrontier, ArrayList<V> sinkFrontier, V v){
 
-        System.out.println("populating data. thread id : " + Thread.currentThread().getId());
+//        System.out.println("populating data. thread id : " + Thread.currentThread().getId());
 
         prepareMaps(v);
         sourceFrontier.add(v);
@@ -337,6 +337,8 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
     @InitParaTask
     private void parallelSearch(){
 
+        System.out.println("Old Parallel Branching Version");
+
         CostComparatorForVertices<V> sourceComparator = new CostComparatorForVertices<>(sourceRouteCost);
         CostComparatorForVertices<V> sinkComparator = new CostComparatorForVertices<>(sinkRouteCost);
 
@@ -348,7 +350,7 @@ public class BidirectionalBreadthFirstSearchOld<V extends Vertex, E extends Dire
         HashSet<V> sinkClose = new HashSet<>(); // avoid duplicates induced by concurrent access
 
         // preparation
-        @Future
+        //@Future
         Void[] populatorPromises = new Void[graph.verticesSet().size()];
         Iterator<V> vertexIterator = graph.vertices().iterator();
         for (int i = 0; i < graph.verticesSet().size(); i++) {
