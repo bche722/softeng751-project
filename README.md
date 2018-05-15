@@ -37,11 +37,11 @@ The resulting jar is called Algo.jar under the 'gen' folder
 # How to run
 Go to the 'gen' folder or any folder containing the built file:
 ```
-java -jar Algo.jar -a <algo_name> -f <input_file> [-p]
+java -jar Algo.jar -a <algo_name> -f <input_file_name>.xml [-p]
 
 -h,-help --- user manual
 -a       --- [bbfs | iddfs | fw], choose an algorithm to run. bbfs - bidirectional BFS; iddfs - iterative deepening DFS; fw - Floyd Warshall.
--f       --- <path to the input file>, specify the input file, in xml format, the default path of generated graph files is right in the root, see RandomGraphGenerator.
+-f       --- <path to the input file>, specify the relative path plus the full name of the input file, the file must be in xml format, the default path of generated graph files is right in the root, see RandomGraphGenerator.
 -p       --- parallelisation flag, place it at the end of the command if intending to run in parallel mode, don't put it down otherwise.
 ```
 
