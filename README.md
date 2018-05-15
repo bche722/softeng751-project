@@ -3,14 +3,47 @@ Project 1:  Parallelisation of graph algorithms in Java
 
 # Group members
  - Mason Shi - GitHub : tshi206 - UPI : tshi206 - ID : 313368828 - bidirectional BFS
- - Vincent Chen - GitHub : bche722 - UPI : bche722 - ID : ?????????? - iterative deepening DFS
- - Joseph Ge - GitHub : taotao - UPI : tge676 - ID : ?????????? - Floyd-Warshall
+ - Baiwei Chen - GitHub : bche722 - UPI : bche722 - ID : ?????????? - iterative deepening DFS
+ - Tao Ge - GitHub : taotao - UPI : tge676 - ID : ?????????? - Floyd-Warshall
 
 # JDK prerequisite
 at least 1.8
 
 # Dependency
 This project is relying on the support from @PT (https://github.com/ParallelAndReconfigurableComputing/ParallelTask/tree/ParaTask%40Spoon/WorkingDirectory/AnnotationProcessor). @PT's library and dependency has been included in the project's local maven repository. If the project fails to compile for the first time after the pulling or cloning, see the troubleshooting instructions down below.
+
+# How to build
+The build process is handled by ANT. To build the jar, run the following build target:
+```
+ant -d compressTranspiledJar
+```
+or alternatively:
+```
+ant -d clean compressTranspiledJar
+```
+If using IntelliJ:
+```
+just double click the target name or right click it and select 'run target'
+```
+If using Eclipse:
+```
+should be the same
+```
+The built file:
+```
+The resulting jar is called Algo.jar under the 'gen' folder
+```
+
+# How to run
+Go to the 'gen' folder or any folder containing the built file:
+```
+java -jar Algo.jar -a <algo_name> -f <input_file> [-p]
+
+-h,-help --- user manual
+-a       --- [bbfs | iddfs | fw], choose an algorithm to run. bbfs - bidirectional BFS; iddfs - iterative deepening DFS; fw - Floyd Warshall.
+-f       --- <path to the input file>, specify the input file, in xml format, the default path of generated graph files is right in the root, see RandomGraphGenerator.
+-p       --- parallelisation flag, place it at the end of the command if intending to run in parallel mode, don't put it down otherwise.
+```
 
 # Troubleshooting - if this project does not compile after pulling/cloning
 ## missing dependency to @PT
