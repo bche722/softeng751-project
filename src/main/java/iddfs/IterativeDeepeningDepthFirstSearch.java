@@ -2,7 +2,7 @@ package iddfs;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
@@ -14,13 +14,11 @@ extends Algorithm<Vertex, DirectedEdge<Vertex>> {
 
 	private BasicDirectedGraph<V, E> graph;
 
-	private ConcurrentHashMap<V, V> routeMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<V, V> routeMap;
 
-	private ConcurrentHashMap<V, Integer> RouteCost = new ConcurrentHashMap<>();
-
-	private V source;
-
-	private V target;
+	private V s;
+	
+	private V t;
 
 	public IterativeDeepeningDepthFirstSearch(BasicDirectedGraph<V, E> graph, boolean isParallel) {
 		this.graph = graph;
@@ -41,50 +39,55 @@ extends Algorithm<Vertex, DirectedEdge<Vertex>> {
 	}
 
 	private void sequentialSearch() {
-		V found = IDDFS(source);
+		graph.sources().forEach(v -> s = v);
+		graph.sinks().forEach(v -> t = v);
+		V found = IDDFS(s,t);
 		ArrayList<V> path = new ArrayList<V>();
 		while(found != null) {
 			path.add(found);
 			found = routeMap.get(found);
 		}
 		Collections.reverse(path);
+		printPath(path);
 	}
 	
-	private V IDDFS(V root) {
+	private V IDDFS(V source, V target) {
 		for(int depth=0;;depth++) {
-			V found = DLS(root, depth);
+			routeMap = new ConcurrentHashMap<V,V>();
+			V found = DFS(source,target,depth);
 			if (found != null) {
 				return found;
 			}
 		}
 	}
-
-	private V DLS(V node, int depth) {
-		if (depth == 0 && node.equals(target)) {
-			return node;
-		}else if(depth > 0) {
-			Iterator<V> i = graph.childrenIterator(node);
-			while(i.hasNext()) {
-				V child = i.next();
-				int newCost = RouteCost.get(node) + child.weight() + graph.edgeBetween(node, child).weight();
-				if (newCost < RouteCost.get(child)) {
-                    RouteCost.replace(child, newCost);
-                    routeMap.put(child, node);
-                }
-				V found = DLS(child,depth-1);
-				if(found != null) {
-					return found;
-				}
-			}
-			return null;
-		}else {
-			return null;
-		}
-
-
-
+	
+	private V DFS(V source, V target, int h) {
+		Stack<V> stack = new Stack<V>();
+		ConcurrentHashMap<V, Integer> heightMap = new ConcurrentHashMap<V,Integer>();
+        stack.push(source);
+        heightMap.put(source, 0);
+        while(!stack.isEmpty()) {
+        	V current = stack.pop();
+        	if(current.equals(target)){
+        		return current;
+        	}
+        	graph.getChilds(current).forEach(v->{
+        		if(routeMap.get(v) == null && heightMap.get(current)<h){
+        			routeMap.put(v, current);
+        			heightMap.put(v, heightMap.get(current)+1);
+        			stack.push(v);
+        		}
+        	});
+        }
+        return null;
+    }  
+	
+	private void printPath(ArrayList<V> path){
+		path.forEach(v->{
+			System.out.print(v.name()+" ");
+		});
 	}
-
+	
 	private void parallelSearch() {
 		// TODO Auto-generated method stub
 

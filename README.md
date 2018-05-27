@@ -3,7 +3,7 @@ Project 1:  Parallelisation of graph algorithms in Java
 
 # Group members
  - Mason Shi - GitHub : tshi206 - UPI : tshi206 - ID : 313368828 - bidirectional BFS
- - Baiwei Chen - GitHub : bche722 - UPI : bche722 - ID : ?????????? - iterative deepening DFS
+ - Baiwei Chen - GitHub : bche722 - UPI : bche722 - ID : 896127611 - iterative deepening DFS
  - Tao Ge - GitHub : taotao - UPI : tge676 - ID : ?????????? - Floyd-Warshall
 
 # JDK prerequisite
