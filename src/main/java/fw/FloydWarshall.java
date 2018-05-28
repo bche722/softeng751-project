@@ -124,20 +124,23 @@ public class FloydWarshall<V extends Vertex, E extends DirectedEdge<V>> extends 
     private void parallelSearch(){
         @Future(taskType = TaskInfoType.MULTI, taskCount = 2)
         List<Integer>  list = new ArrayList<Integer>();
+        for(int k=0; k<graph.sizeVertices(); k++) {
 
-        list.add(processSearch());
+            list.add(processSearch(k));
+
+        }
         System.out.println(list);
 
     }
-    private int processSearch(){
-        for(int k=0; k<graph.sizeVertices(); k++) {
+    private int processSearch(int k){
+        //for(int k=0; k<graph.sizeVertices(); k++) {
             for (int i = 0; i < graph.sizeVertices(); i++) {
                 for (int j = 0; j < graph.sizeVertices(); j++) {
 
                     task(i,j,k);
                 }
             }
-        }
+       // }
         return 0;
     }
 
