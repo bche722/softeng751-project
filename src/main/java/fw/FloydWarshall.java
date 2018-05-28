@@ -54,6 +54,7 @@ public class FloydWarshall<V extends Vertex, E extends DirectedEdge<V>> extends 
         long initialFinish = System.currentTimeMillis();
         long differenceInit = initialFinish - initialStart;
         System.out.println("Time taken to initialize the matrix is: " + differenceInit + " milliseconds");
+        System.out.println("Number of nodes of the graph: " + graph.sizeVertices());
          startTime = System.currentTimeMillis();
         if (isParallel){
             parallelSearch();
