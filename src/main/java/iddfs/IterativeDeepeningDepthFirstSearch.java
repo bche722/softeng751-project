@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
+
+import apt.annotations.Future;
+import apt.annotations.InitParaTask;
+import apt.annotations.TaskInfoType;
 import graph.BasicDirectedGraph;
 import graph.DirectedEdge;
 import graph.Vertex;
@@ -28,7 +32,9 @@ public class IterativeDeepeningDepthFirstSearch<V extends Vertex, E extends Dire
 	@Override
 	public void doTheJob() {
 		System.out.println("Parallel Mode: " + this.isParallel);
-
+		graph.sources().forEach(v -> s = v);
+		graph.sinks().forEach(v -> t = v);
+		
 		long start_time = System.nanoTime();
 		if (isParallel) {
 			parallelSearch();
@@ -41,8 +47,6 @@ public class IterativeDeepeningDepthFirstSearch<V extends Vertex, E extends Dire
 	}
 
 	private void sequentialSearch() {
-		graph.sources().forEach(v -> s = v);
-		graph.sinks().forEach(v -> t = v);
 		V found = IDDFS(s, t);
 		ArrayList<V> path = new ArrayList<V>();
 		while (found != null) {
@@ -92,8 +96,18 @@ public class IterativeDeepeningDepthFirstSearch<V extends Vertex, E extends Dire
 		System.out.println();
 	}
 
+	@InitParaTask
 	private void parallelSearch() {
 		// TODO Auto-generated method stub
-
+		//int numOfProcessors = Runtime.getRuntime().availableProcessors();
+		@Future(taskType=TaskInfoType.MULTI, taskCount=2)
+		V found = IDDFS(s, t);
+		ArrayList<V> path = new ArrayList<V>();
+		while (found != null) {
+			path.add(found);
+			found = routeMap.get(found);
+		}
+		Collections.reverse(path);
+		printPath(path);
 	}
 }
